@@ -52,6 +52,7 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 import net.wurstclient.hacks.search.SearchArea;
 import net.wurstclient.settings.BlockSetting;
+import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.settings.SliderSetting;
 import net.wurstclient.settings.SliderSetting.ValueDisplay;
@@ -77,6 +78,10 @@ public final class SearchHack extends Hack
 		"The maximum number of blocks to display.\n"
 			+ "Higher values require a faster computer.",
 		4, 3, 6, 1, ValueDisplay.LOGARITHMIC);
+
+	private final CheckboxSetting noRainbow = new CheckboxSetting(
+		"no Rainbow", "disable the \"Rainbow\" effect.", false);
+
 	private int prevLimit;
 	private boolean notify;
 	
@@ -99,6 +104,7 @@ public final class SearchHack extends Hack
 		addSetting(block);
 		addSetting(area);
 		addSetting(limit);
+		addSetting(noRainbow);
 	}
 	
 	@Override
@@ -225,7 +231,13 @@ public final class SearchHack extends Hack
 		matrixStack.push();
 		RenderUtils.applyRegionalRenderOffset(matrixStack);
 		
-		float[] rainbow = RenderUtils.getRainbowColor();
+		// basic (mineraft) yellow
+		float red = 1F, green = 1F, blue = 0.33F, alpha = 0.5F;
+		float[] rainbow = { red, green, blue, alpha };
+
+		if(!noRainbow.isChecked())
+			rainbow = RenderUtils.getRainbowColor();
+			
 		RenderSystem.setShaderColor(rainbow[0], rainbow[1], rainbow[2], 0.5F);
 		
 		RenderSystem.setShader(GameRenderer::getPositionShader);

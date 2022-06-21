@@ -86,6 +86,17 @@ public final class AutoEatHack extends Hack implements UpdateListener
 		new CheckboxSetting("Allow chorus fruit",
 			"description.wurst.setting.autoeat.allow_chorus", false);
 	
+	private final CheckboxSetting allowGoldenFood =
+		new CheckboxSetting("allow golden food",
+			" \n"
+				+ " ",
+			false);
+	private final CheckboxSetting allowRawMeet =
+		new CheckboxSetting("allow raw meet",
+			" \n"
+				+ " ",
+			false);
+
 	private int oldSlot = -1;
 	
 	public AutoEatHack()
@@ -105,6 +116,9 @@ public final class AutoEatHack extends Hack implements UpdateListener
 		addSetting(allowHunger);
 		addSetting(allowPoison);
 		addSetting(allowChorus);
+
+		addSetting(allowGoldenFood);
+		addSetting(allowRawMeet);
 	}
 	
 	@Override
@@ -293,6 +307,37 @@ public final class AutoEatHack extends Hack implements UpdateListener
 	{
 		if(!allowChorus.isChecked() && food == FoodComponents.CHORUS_FRUIT)
 			return false;
+
+		//https://stackoverflow.com/questions/8962700/is-there-a-simpler-way-to-check-multiple-values-against-one-value-in-an-if-state
+		if(!allowGoldenFood.isChecked()) {
+			if (Stream.of(FoodComponents.GOLDEN_APPLE,
+				FoodComponents.ENCHANTED_GOLDEN_APPLE,
+				FoodComponents.GOLDEN_CARROT
+				).anyMatch(x -> x.equals(food))) {
+				
+				return false;
+			}
+		}
+		/*if(!allowGoldenFood.isChecked()) {
+			if (food. == ( FoodComponents.GOLDEN_APPLE || FoodComponents.ENCHANTED_GOLDEN_APPLE || FoodComponents.GOLDEN_CARROT )) {
+				return false;
+			}
+		}*/
+
+		if(!allowRawMeet.isChecked()) {
+			if (Stream.of(FoodComponents.BEEF,
+				FoodComponents.CHICKEN,
+				FoodComponents.COD,
+				FoodComponents.PORKCHOP,
+				FoodComponents.PUFFERFISH,
+				FoodComponents.RABBIT,
+				FoodComponents.SALMON,
+				FoodComponents.TROPICAL_FISH
+				).anyMatch(x -> x.equals(food))) {
+				
+				return false;
+			}
+		}
 		
 		for(Pair<StatusEffectInstance, Float> pair : food.getStatusEffects())
 		{

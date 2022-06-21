@@ -60,6 +60,25 @@ public final class AutoFarmHack extends Hack
 	
 	private final CheckboxSetting replant =
 		new CheckboxSetting("Replant", true);
+
+	private final CheckboxSetting ftrSugarCane = new CheckboxSetting(
+		"Filter SugarCane", "Won't harvest Sugar Cane.", false);
+	private final CheckboxSetting ftrCactus = new CheckboxSetting(
+		"Filter Cactus", "Won't harvest Cactus.", false);
+	private final CheckboxSetting ftrKelpPlant = new CheckboxSetting(
+		"Filter Kelp", "Won't harvest Kelp.", false);
+	private final CheckboxSetting ftrNetherWart = new CheckboxSetting(
+		"Filter NetherWart", "Won't harvest Nether Wart.", false);
+	private final CheckboxSetting ftrMelon = new CheckboxSetting(
+		"Filter Melon", "Won't harvest Melon.", false);
+	private final CheckboxSetting ftrPumpkin = new CheckboxSetting(
+		"Filter Pumpkin", "Won't harvest Pumpkin.", false);
+	private final CheckboxSetting ftrBamboo = new CheckboxSetting(
+		"Filter Bamboo", "Won't harvest Bamboo.", false);
+	private final CheckboxSetting ftrSweetBerry = new CheckboxSetting(
+		"Filter SweetBerry", "Won't harvest Sweet Berry.", false);
+	private final CheckboxSetting ftrChorusPlant = new CheckboxSetting(
+		"Filter ChorusPlant", "Won't harvest Chorus Plant.", false);
 	
 	private final HashMap<BlockPos, Item> plants = new HashMap<>();
 	
@@ -81,6 +100,16 @@ public final class AutoFarmHack extends Hack
 		setCategory(Category.BLOCKS);
 		addSetting(range);
 		addSetting(replant);
+
+		addSetting(ftrSugarCane);
+		addSetting(ftrCactus);
+		addSetting(ftrKelpPlant);
+		addSetting(ftrNetherWart);
+		addSetting(ftrMelon);
+		addSetting(ftrPumpkin);
+		addSetting(ftrBamboo);
+		addSetting(ftrSweetBerry);
+		addSetting(ftrChorusPlant);
 	}
 	
 	@Override
@@ -279,29 +308,51 @@ public final class AutoFarmHack extends Hack
 		Block block = BlockUtils.getBlock(pos);
 		BlockState state = BlockUtils.getState(pos);
 		
-		if(block instanceof CropBlock)
+		// minecraft:wheat, https://minecraft.gamepedia.com/Crops
+		if(block instanceof CropBlock) // PotatoesBlock, CarrotsBlock, BeetrootsBlock
 			return ((CropBlock)block).isMature(state);
-		if(block instanceof GourdBlock)
-			return true;
-		if(block instanceof SugarCaneBlock)
+
+		/*if(block instanceof GourdBlock) // MelonBlock, PumpkinBlock
+			return true;*/
+
+		if(!ftrSugarCane.isChecked() && block instanceof SugarCaneBlock)
 			return BlockUtils.getBlock(pos.down()) instanceof SugarCaneBlock
 				&& !(BlockUtils
 					.getBlock(pos.down(2)) instanceof SugarCaneBlock);
-		if(block instanceof CactusBlock)
+
+		if(!ftrCactus.isChecked() && block instanceof CactusBlock)
 			return BlockUtils.getBlock(pos.down()) instanceof CactusBlock
 				&& !(BlockUtils.getBlock(pos.down(2)) instanceof CactusBlock);
-		if(block instanceof KelpPlantBlock)
+
+		if(!ftrKelpPlant.isChecked() && block instanceof KelpPlantBlock)
 			return BlockUtils.getBlock(pos.down()) instanceof KelpPlantBlock
 				&& !(BlockUtils
 					.getBlock(pos.down(2)) instanceof KelpPlantBlock);
-		if(block instanceof NetherWartBlock)
+
+		if(!ftrNetherWart.isChecked() && block instanceof NetherWartBlock)
 			return state.get(NetherWartBlock.AGE) >= 3;
-		if(block instanceof BambooBlock)
+
+		if(!ftrBamboo.isChecked() && block instanceof BambooBlock)
 			return BlockUtils.getBlock(pos.down()) instanceof BambooBlock
 				&& !(BlockUtils.getBlock(pos.down(2)) instanceof BambooBlock);
+
 		if(block instanceof CocoaBlock)
 			return state.get(CocoaBlock.AGE) >= 2;
+
+		if(!ftrMelon.isChecked() && block instanceof MelonBlock)
+			return true;
 		
+		if(!ftrPumpkin.isChecked() && block instanceof PumpkinBlock)
+			return true;
+
+		if(!ftrChorusPlant.isChecked() && block instanceof ChorusPlantBlock)
+			return BlockUtils.getBlock(pos.down()) instanceof ChorusPlantBlock
+				&& !(BlockUtils.getBlock(pos.down(2)) instanceof ChorusPlantBlock);
+
+/*		if(!ftrSweetBerry.isChecked() && block instanceof SweetBerryBushBlock)
+			//int tmp = state.get(SweetBerryBushBlock.AGE);
+			return state.get(SweetBerryBushBlock.AGE) >= 2;
+*/		
 		return false;
 	}
 	

@@ -27,6 +27,7 @@ import net.wurstclient.hacks.XRayHack;
 import net.wurstclient.mixinterface.IScreen;
 import net.wurstclient.other_features.VanillaSpoofOtf;
 import net.wurstclient.settings.CheckboxSetting;
+import net.wurstclient.update.WurstUpdater;
 
 public class WurstOptionsScreen extends Screen
 {
@@ -59,6 +60,7 @@ public class WurstOptionsScreen extends Screen
 		VanillaSpoofOtf vanillaSpoofOtf = wurst.getOtfs().vanillaSpoofOtf;
 		CheckboxSetting forceEnglish =
 			wurst.getOtfs().translationsOtf.getForceEnglish();
+		WurstUpdater updater = WurstClient.INSTANCE.getUpdater();
 		
 		new WurstOptionsButton(-154, 24,
 			() -> "Click Friends: "
@@ -93,6 +95,12 @@ public class WurstOptionsScreen extends Screen
 				+ "speak both English and some other language,\n"
 				+ "please help us by adding more translations.",
 			b -> forceEnglish.setChecked(!forceEnglish.isChecked()));
+
+		new WurstOptionsButton(-154, 120,
+			() -> "Updater: " + (updater.isEnabled() ? "ON" : "OFF"),
+			"Check for Updates of Wurst\n"
+				+ "is a new version available.",
+			b -> updater.setEnabled(!updater.isEnabled()));
 	}
 	
 	private void addManagerButtons()

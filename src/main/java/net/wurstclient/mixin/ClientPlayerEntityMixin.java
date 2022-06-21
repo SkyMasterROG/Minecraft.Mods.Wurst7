@@ -265,4 +265,55 @@ public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 	{
 		
 	}
+
+	/*@Override
+	public boolean interact(net.minecraft.entity.player.PlayerEntity player,
+								net.minecraft.util.Hand hand) {
+		//boolean isValid = super.interact((net.minecraft.entity.player.PlayerEntity)super, super.getActiveHand());
+		//boolean isValid = super.interact(this, super.getActiveHand());
+//		boolean isValid = super.interact(WurstClient.MC.player, WurstClient.MC.player.getActiveHand());
+		boolean plrRes = super.interact(player, hand);
+
+		net.wurstclient.events.ClientInteractListener.ClientInteractEvent event =
+			new net.wurstclient.events.ClientInteractListener.ClientInteractEvent(player, hand, plrRes);
+		WurstClient.INSTANCE.getEventManager().fire(event);
+
+		return plrRes;
+	}*/
+
+	@Override
+	public net.minecraft.util.ActionResult interact(net.minecraft.entity.Entity entity,
+														net.minecraft.util.Hand hand) {
+		net.minecraft.util.ActionResult actRes = super.interact(entity, hand);
+
+		net.wurstclient.events.ClientInteractListener.ClientInteractEvent event = null;
+
+		if(entity.getType() == net.minecraft.entity.EntityType.VILLAGER) {
+			event =
+				new net.wurstclient.events.ClientInteractListener.ClientInteractEvent((net.minecraft.entity.passive.VillagerEntity)entity, hand, actRes);
+		} else {
+			event =
+				new net.wurstclient.events.ClientInteractListener.ClientInteractEvent(entity, hand, actRes);
+		}
+
+		if(event != null)
+			WurstClient.INSTANCE.getEventManager().fire(event);
+
+		return actRes;
+	}
+
+	@Override
+	public net.minecraft.util.ActionResult interactAt(net.minecraft.entity.player.PlayerEntity player,
+														net.minecraft.util.math.Vec3d hitPos,
+														net.minecraft.util.Hand hand) {
+		net.minecraft.util.ActionResult actRes = super.interactAt(player, hitPos, hand);
+
+		net.wurstclient.events.ClientInteractListener.ClientInteractAtEvent event =
+			new net.wurstclient.events.ClientInteractListener.ClientInteractAtEvent(player, hitPos, hand, actRes);
+
+		if(event != null)
+			WurstClient.INSTANCE.getEventManager().fire(event);
+
+		return actRes;
+	}
 }

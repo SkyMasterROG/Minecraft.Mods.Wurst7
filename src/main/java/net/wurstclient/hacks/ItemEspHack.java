@@ -32,6 +32,7 @@ import net.wurstclient.events.CameraTransformViewBobbingListener;
 import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
+import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.ColorSetting;
 import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.util.RenderUtils;
@@ -54,7 +55,19 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	private final ColorSetting color = new ColorSetting("Color",
 		"Items will be highlighted in this color.", Color.YELLOW);
 	
+	private final CheckboxSetting names = new CheckboxSetting("Show item names",
+		"Sorry, this is currently broken!\n"
+			+ "19w39a changed how nameplates work\n"
+			+ "and we haven't figured it out yet.",
+		true);
+
+	private final CheckboxSetting showMore = new CheckboxSetting("Show more \"Items\"",
+		"Shows \"Experience orb\", too",
+		true);
+
 	private final ArrayList<ItemEntity> items = new ArrayList<>();
+	private int itemBox;
+	private final ArrayList<net.minecraft.entity.Entity> more = new ArrayList<>();
 	
 	public ItemEspHack()
 	{
@@ -64,6 +77,10 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		addSetting(style);
 		addSetting(boxSize);
 		addSetting(color);
+
+		addSetting(names);
+		addSetting(showMore);
+
 	}
 	
 	@Override
@@ -86,9 +103,17 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	public void onUpdate()
 	{
 		items.clear();
-		for(Entity entity : MC.world.getEntities())
+		more.clear();
+
+		for(Entity entity : MC.world.getEntities()) {
 			if(entity instanceof ItemEntity)
 				items.add((ItemEntity)entity);
+
+			if(showMore.isChecked() && (entity.getType() == net.minecraft.entity.EntityType.EXPERIENCE_ORB)) {
+// crash, can not cast				items.add((ItemEntity)entity);
+				more.add(entity);
+			}
+		}
 	}
 	
 	@Override
@@ -117,6 +142,9 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
+
+		if(showMore.isChecked())
+			renderBoxesMore(partialTicks);
 		
 		matrixStack.pop();
 		
@@ -157,6 +185,57 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 				
 				matrixStack.pop();
 			}
+
+			etyCustomName(e, e.getStack().isStackable(), e.getStack().getCount(), names.isChecked());
+			/*if(names.isChecked()) {
+				// ItemStack stack = e.getStack();
+				// GameRenderer.renderFloatingText(MC.textRenderer,
+				// stack.getCount() + "x "
+				// + stack.getName().asFormattedString(),
+				// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
+				// MC.getEntityRenderManager().cameraPitch, false);
+				// GL11.glDisable(GL11.GL_LIGHTING);
+
+				net.minecraft.item.ItemStack stack = e.getStack();
+				
+
+				String sName = stack.getName().asFormattedString();
+				if(e.hasCustomName())
+					sName = e.getCustomName().asFormattedString();
+
+				String sJson = "{\"text\":\"";
+				String sPat = "x ";
+				boolean hasChanged = false;
+
+				if(sName.contains(sPat)) {
+					String sArr[] = sName.split(sPat);
+					try {
+						//int iCount = Integer.parseInt(sArr[0]);
+						if(stack.getCount() != Integer.parseInt(sArr[0])) {
+							hasChanged = true;
+							sName = stack.getName().asFormattedString();
+							sJson = sJson + Integer.toString(stack.getCount());
+						}
+
+					} catch (Exception ex) {
+						new net.wurstclient.command.CmdSyntaxError("Invalid" + ex.getMessage());
+					}
+				} else {
+					hasChanged = true;
+					sJson = sJson + Integer.toString(stack.getCount());
+				}
+
+				sJson = sJson + sPat + sName + "\"}";
+				if(hasChanged) {
+					//net.minecraft.text.Text mcTxt = net.minecraft.text.Text.Serializer.fromJson(sJson);
+					//e.setCustomName(mcTxt);
+					e.setCustomName(net.minecraft.text.Text.Serializer.fromJson(sJson));
+				}
+
+				if(!e.isCustomNameVisible()) {
+					e.setCustomNameVisible(true);
+				}
+			}*/
 			
 			matrixStack.pop();
 		}
@@ -193,6 +272,146 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 				(float)end.z - regionZ).next();
 		}
 		tessellator.draw();
+	}
+
+	private void renderBoxesMore(double partialTicks)
+	{
+		double extraSize = boxSize.getSelected().extraSize;
+		
+		for(Entity e : more)
+		{
+			GL11.glPushMatrix();
+			
+			GL11.glTranslated(e.prevX + (e.getX() - e.prevX) * partialTicks,
+				e.prevY + (e.getY() - e.prevY) * partialTicks,
+				e.prevZ + (e.getZ() - e.prevZ) * partialTicks);
+			
+			if(style.getSelected().boxes)
+			{
+				GL11.glPushMatrix();
+				GL11.glScaled(e.getWidth() + extraSize,
+					e.getHeight() + extraSize, e.getWidth() + extraSize);
+				GL11.glCallList(itemBox);
+				GL11.glPopMatrix();
+			}
+
+			boolean hasCount = false;
+			int iCount = 0;
+			if(e.getType() == net.minecraft.entity.EntityType.EXPERIENCE_ORB) {
+				iCount = ((net.minecraft.entity.ExperienceOrbEntity)e).getExperienceAmount();
+				hasCount = (iCount >= 1);
+			}
+
+			etyCustomName(e, hasCount, iCount, names.isChecked());
+			/*if(names.isChecked()) {
+				// ItemStack stack = e.getStack();
+				// GameRenderer.renderFloatingText(MC.textRenderer,
+				// stack.getCount() + "x "
+				// + stack.getName().asFormattedString(),
+				// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
+				// MC.getEntityRenderManager().cameraPitch, false);
+				// GL11.glDisable(GL11.GL_LIGHTING);
+
+				int expAmt = 0;//net.minecraft.item.ItemStack stack = e.getStack();
+				String sName = e.getName().asFormattedString();
+				if(e.hasCustomName())
+					sName = e.getCustomName().asFormattedString();
+
+				String sJson = "{\"text\":\"";
+				String sPat = "x ";
+				boolean hasChanged = false;
+
+				if(e.getType() == net.minecraft.entity.EntityType.EXPERIENCE_ORB) {
+					net.minecraft.entity.ExperienceOrbEntity expOrbEty = (net.minecraft.entity.ExperienceOrbEntity)e;
+					expAmt = expOrbEty.getExperienceAmount();
+
+					//net.minecraft.nbt.CompoundTag compTag = new net.minecraft.nbt.CompoundTag();
+					//expOrbEty.toTag(compTag);
+					//expOrbEty.saveSelfToTag(compTag);
+					//expOrbEty.saveToTag(compTag);
+
+					//expAmt = 0;
+				}
+
+				if(sName.contains(sPat)) {
+					String sArr[] = sName.split(sPat);
+					try {
+						//int iCount = Integer.parseInt(sArr[0]);
+						if(expAmt != Integer.parseInt(sArr[0])) {
+							hasChanged = true;
+							sName = e.getName().asFormattedString();
+							sJson = sJson + Integer.toString(1);
+						}
+
+					} catch (Exception ex) {
+						new net.wurstclient.command.CmdSyntaxError("Invalid" + ex.getMessage());
+					}
+				} else {
+					hasChanged = true;
+					sJson = sJson + Integer.toString(expAmt);
+				}
+
+				sJson = sJson + sPat + sName + "\"}";
+				if(hasChanged) {
+					net.minecraft.text.Text mcTxt = net.minecraft.text.Text.Serializer.fromJson(sJson);
+					e.setCustomName(mcTxt);
+				}
+
+				if(!e.isCustomNameVisible()) {
+					e.setCustomNameVisible(true);
+				}
+			}*/
+			
+			GL11.glPopMatrix();
+		}
+	}
+
+	private void etyCustomName(Entity ety, boolean hasCount, int iCount, boolean visible) {
+		//String sName = ety.getName().asFormattedString();
+		String sName = ety.getName().toString();
+		if(ety.hasCustomName())
+			//sName = ety.getCustomName().asFormattedString();
+			sName = ety.getCustomName().toString();
+
+		String sJson = "{\"text\":\"";
+		String sPat = "x ";
+		//boolean hasChanged = false;
+
+		if(!visible) {
+			sJson = null;
+
+		} else if(hasCount && sName.contains(sPat)) {
+			String sArr[] = sName.split(sPat);
+			try {
+				//int iCount = Integer.parseInt(sArr[0]);
+				if(iCount != Integer.parseInt(sArr[0])) {
+					//hasChanged = true;
+					sName = sArr[1];
+					sJson = sJson + Integer.toString(iCount);
+				} else {
+					sJson = null;
+				}
+
+			} catch (Exception ex) {
+				sJson = null;
+				visible = false;
+				new net.wurstclient.command.CmdSyntaxError("Invalid" + ex.getMessage());
+			}
+		} else if(hasCount) {
+			//hasChanged = true;
+			sJson = sJson + Integer.toString(iCount);
+		}
+
+		if(sJson != null) {
+			if(hasCount)
+				sJson = sJson + sPat;
+			sJson = sJson + sName + "\"}";
+			ety.setCustomName(net.minecraft.text.Text.Serializer.fromJson(sJson));
+		}
+
+		if(ety.isCustomNameVisible() != visible) {
+			ety.setCustomNameVisible(visible);
+		}
 	}
 	
 	private enum Style

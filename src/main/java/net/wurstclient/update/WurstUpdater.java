@@ -22,10 +22,14 @@ public final class WurstUpdater implements UpdateListener
 	private Thread thread;
 	private boolean outdated;
 	private Text component;
+	private boolean enabled;
 	
 	@Override
 	public void onUpdate()
 	{
+		if(!enabled)
+			return;
+			
 		if(thread == null)
 		{
 			thread = new Thread(this::checkForUpdates, "WurstUpdater");
@@ -124,5 +128,13 @@ public final class WurstUpdater implements UpdateListener
 	public boolean isOutdated()
 	{
 		return outdated;
+	}
+
+	public boolean isEnabled() {
+		return enabled;
+	}
+
+	public boolean setEnabled(boolean enabled) {
+		return this.enabled = enabled;
 	}
 }

@@ -58,6 +58,15 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't show invisible mobs.", false);
 	
+	private final CheckboxSetting filterMobs = new CheckboxSetting(
+		"Filter Mobs", "Won't show other mobs.", false);
+
+	private final EnumSetting<OnlyMob_> onlyMob =
+		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
+
+	private final CheckboxSetting showMobsNames = new CheckboxSetting(
+		"Show Mobs Names", "show mobs names.", false);
+
 	private final ArrayList<MobEntity> mobs = new ArrayList<>();
 	private VertexBuffer mobBox;
 	
@@ -68,11 +77,37 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		addSetting(style);
 		addSetting(boxSize);
 		addSetting(filterInvisible);
+
+		addSetting(filterMobs);
+		addSetting(onlyMob);
+//		addSetting(showMobsNames);
 	}
 	
 	@Override
 	public void onEnable()
 	{
+		if(filterMobs.isChecked()) {
+//			filterMobs.lock(filterMobs);
+						
+			onlyMob.getComponent().setHeight(filterMobs.getComponent().getHeight());
+
+			/*Component w_comp = onlyMob.getComponent();
+			if(w_comp != null) {
+				Window w_cgui_wdw = onlyMob.getComponent().getParent();
+				if(w_cgui_wdw != null) {
+					int i_tmp = onlyMob.getComponent().getParent().countChildren();
+					w_comp = onlyMob.getComponent().getParent().getChild(0);
+
+					//onlyMob.getComponent().getParent().setInvisible(true);
+					//onlyMob.getComponent().getParent().setInvisible(filterMobs.isChecked());
+				}
+			}*/
+						
+//			filterMobs.unlock();
+		} else {
+			onlyMob.getComponent().setHeight(1);
+		}
+
 		EVENTS.add(UpdateListener.class, this);
 		EVENTS.add(CameraTransformViewBobbingListener.class, this);
 		EVENTS.add(RenderListener.class, this);
@@ -85,6 +120,13 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	@Override
 	public void onDisable()
 	{
+/*		if(filterMobs.isChecked())
+			onlyMob.getComponent().getParent().setInvisible(false);
+		//onlyMob.getComponent().getParent().setInvisible(filterMobs.isChecked());
+*/
+				//Component w_comp = onlyMob.getComponent();
+		//Component w_comp_this = this.WURST.getHax().mobEspHack.finalize();
+
 		EVENTS.remove(UpdateListener.class, this);
 		EVENTS.remove(CameraTransformViewBobbingListener.class, this);
 		EVENTS.remove(RenderListener.class, this);
@@ -105,6 +147,28 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		
 		if(filterInvisible.isChecked())
 			stream = stream.filter(e -> !e.isInvisible());
+
+		if(filterMobs.isChecked()) {
+			stream = stream.filter(e -> (e.getType() == onlyMob.getSelected().getType()));
+
+			//if((onlyMob.getSelected().getDescription() != null) && (!onlyMob.getSelected().getDescription().isEmpty())) {
+			if(onlyMob.getSelected().getItem() != null) {
+				//String sName[] = onlyMob.getSelected().toString().split(",");
+				String sItemId = onlyMob.getSelected().getDescription().toLowerCase();//"trident";
+
+				//stream = stream.filter(e -> e.toString().contains(sName[0]));
+				try {
+					//net.minecraft.item.Item mcItem = net.minecraft.util.registry.Registry.ITEM.get(new net.minecraft.util.Identifier(sItemId));
+					stream = stream.filter(e -> e.isHolding(onlyMob.getSelected().getItem()));
+
+				} catch(net.minecraft.util.InvalidIdentifierException e) {
+					/*throw */new net.wurstclient.command.CmdSyntaxError("Invalid item: " + sItemId);
+				}
+
+			}/* else {
+				stream = stream.filter(e -> e.toString().contains(onlyMob.getSelected().toString()));
+			}*/
+		}
 		
 		mobs.addAll(stream.collect(Collectors.toList()));
 	}
@@ -138,6 +202,9 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
+
+		if(/*true || */showMobsNames.isChecked())
+			renderNames(partialTicks);
 		
 		matrixStack.pop();
 		
@@ -220,12 +287,70 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		tessellator.draw();
 		
 	}
+
+	private void renderNames(double partialTicks) {// throws net.wurstclient.command.CmdSyntaxError
+		for(MobEntity mob : mobs) {
+			net.minecraft.item.ItemStack stack;
+			boolean isValid;
+			net.minecraft.item.Item.Settings setts;
+			setts = new net.minecraft.item.Item.Settings();
+			net.minecraft.item.TridentItem trident = new net.minecraft.item.TridentItem(setts);
+			String sId = "trident";
+			net.minecraft.item.Item mcItem = null;
+
+			try {
+				mcItem = net.minecraft.util.registry.Registry.ITEM.get(new net.minecraft.util.Identifier(sId));
+			}catch(net.minecraft.util.InvalidIdentifierException e) {
+				/*throw */new net.wurstclient.command.CmdSyntaxError("Invalid item: " + sId);
+			}
+			
+
+			if((onlyMob.getSelected().getDescription() != null) && (!onlyMob.getSelected().getDescription().isEmpty())) {
+				String sAry[] = onlyMob.getSelected().toString().split(",");
+				if(sAry.length >= 2) {
+					//MobEntity mEty;
+					//mEty.getActiveHand().MAIN_HAND.
+					//java.lang.Iterable<net.minecraft.item.ItemStack> stacks = mEty.getItemsEquipped();
+					//stacks = mEty.getItemsHand();
+					//mEty.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);
+					//ArrayList<net.minecraft.item.Item> mcItems = new ArrayList<>();
+					//MobEntity.canEquipmentSlotContain(net.minecraft.entity.EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack);
+					//net.minecraft.item.Item mcItem = mEty.getEquipmentForSlot(net.minecraft.entity.EquipmentSlot.MAINHAND, 0);
+
+					isValid = mob.toString().contains(sAry[0]);
+					isValid = mob.isUsingItem();
+					isValid = mob.isHolding(trident);
+					if(mcItem != null)
+						isValid = mob.isHolding(mcItem);
+
+					if(mob.getActiveItem() != null)
+						isValid = mob.getActiveItem().getItem() instanceof net.minecraft.item.TridentItem;
+					
+					stack = mob.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);//"1 trident"
+					isValid = mob.isHolding(stack.getItem());
+					isValid = stack.getItem() instanceof net.minecraft.item.TridentItem;
+					stack = mob.getEquippedStack(net.minecraft.entity.EquipmentSlot.OFFHAND);//"1 nautilus_shell"
+					isValid = mob.isHolding(stack.getItem());
+					isValid = stack.getItem() instanceof net.minecraft.item.TridentItem;
+
+					isValid = mob.hasStackEquipped(net.minecraft.entity.EquipmentSlot.MAINHAND);
+					isValid = mob.hasStackEquipped(net.minecraft.entity.EquipmentSlot.OFFHAND);
+					isValid = isValid ? true : false;
+					//stream = stream.filter(e -> e.toString().contains(sAry[0])).filter(e -> e.isUsingItem()).filter(e -> e.isHolding(trident));
+				}
+			}
+
+			if(trident != null)
+				trident.isDamageable();
+		}
+	}
 	
 	private enum Style
 	{
 		BOXES("Boxes only", true, false),
 		LINES("Lines only", false, true),
-		LINES_AND_BOXES("Lines and boxes", true, true);
+		LINES_AND_BOXES("Lines and boxes", true, true),
+		BOXES_AND_NAMES("boxes and names", false, false);
 		
 		private final String name;
 		private final boolean boxes;
@@ -263,6 +388,64 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		public String toString()
 		{
 			return name;
+		}
+	}
+
+	private enum OnlyMob_ {
+		drowned("Drowned", "Trident", net.minecraft.entity.EntityType.DROWNED, net.minecraft.item.Items.TRIDENT),
+		axolotl("Axolotl", net.minecraft.entity.EntityType.AXOLOTL),
+		bee("Bee", net.minecraft.entity.EntityType.BEE),
+		enderman("Enderman", net.minecraft.entity.EntityType.ENDERMAN),
+		ender_dragon("Ender Dragon", net.minecraft.entity.EntityType.ENDER_DRAGON),
+		evoker("Evoker", net.minecraft.entity.EntityType.EVOKER),
+		experience_orb("Experience orb", net.minecraft.entity.EntityType.EXPERIENCE_ORB),
+		eye_of_ender("Eye of Ender", net.minecraft.entity.EntityType.EYE_OF_ENDER),
+		glow_squid("Glow Squid", net.minecraft.entity.EntityType.GLOW_SQUID),
+		magma_cube("Magma cube", net.minecraft.entity.EntityType.MAGMA_CUBE),
+		pillager("Pillager", net.minecraft.entity.EntityType.PILLAGER),
+		shulker("Shulker", net.minecraft.entity.EntityType.SHULKER),
+		skeleton_hourse(net.minecraft.entity.mob.SkeletonHorseEntity.ID_KEY, net.minecraft.entity.EntityType.SKELETON_HORSE),
+		slime("Slime", net.minecraft.entity.EntityType.SLIME),
+		squid("Squid", net.minecraft.entity.EntityType.SQUID),
+		warden("Warden", net.minecraft.entity.EntityType.WARDEN),
+		wither_skeleton("Wither skeleton", net.minecraft.entity.EntityType.WITHER_SKELETON),
+		wither_skull("Wither skeleton skull", net.minecraft.entity.EntityType.WITHER_SKULL),
+		wolf("Wolf", net.minecraft.entity.EntityType.WOLF),
+		zombie_villager("Zombie Villager", net.minecraft.entity.EntityType.ZOMBIE_VILLAGER);
+		
+		private final String name;
+		private String description;
+		net.minecraft.entity.EntityType<?> type;
+		net.minecraft.item.Item item;
+		
+		
+		private OnlyMob_(String name, net.minecraft.entity.EntityType<?> type) {
+			this.name = name;
+			this.type = type;
+		}
+
+		private OnlyMob_(String name, String description, net.minecraft.entity.EntityType<?> type, net.minecraft.item.Item item) {
+			this.name = name + ", with " + description;
+			this.description = description;
+			this.type = type;
+			this.item = item;
+		}
+
+		@Override
+		public String toString() {
+			return this.name;
+		}
+
+		public net.minecraft.entity.EntityType<?> getType() {
+			return this.type;
+		}
+
+		public net.minecraft.item.Item getItem() {
+			return this.item;
+		}
+
+		public String getDescription() {
+			return this.description;
 		}
 	}
 }

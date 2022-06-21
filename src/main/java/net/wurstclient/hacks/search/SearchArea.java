@@ -16,6 +16,7 @@ import net.wurstclient.WurstClient;
 
 public enum SearchArea
 {
+	D1("1x1 chunks", 0),
 	D3("3x3 chunks", 1),
 	D5("5x5 chunks", 2),
 	D7("7x7 chunks", 3),
