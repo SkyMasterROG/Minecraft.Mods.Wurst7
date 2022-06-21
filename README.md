@@ -22,18 +22,24 @@ For discussion about translations, see [Issue #404](https://github.com/Wurst-Imp
 
 https://www.wurstclient.net/download/
 
-## Setup (for developers) (using Windows 10 & Eclipse)
+## Setup (for developers) (using Windows 10 & (a)Eclipse | (b)VS Code)
 
 Requirements: [JDK 17](https://adoptium.net/?variant=openjdk17&jvmVariant=hotspot)
 
-1. Run these two commands in PowerShell:
-
+1.a Run these two commands in PowerShell:
 ```
 ./gradlew.bat genSources
 ./gradlew.bat eclipse
+
+1.b Run these two commands in PowerShell:
+
+```
+./gradlew.bat genSources
+./gradlew.bat vscode
 ```
 
-2. In Eclipse, go to `Import...` > `Existing Projects into Workspace` and select this project.
+2.a In Eclipse, go to `Import...` > `Existing Projects into Workspace` and select this project.
+2.b In VS Code, go to `Open Folder...` and select this project folder.
 
 ## License
 
