@@ -38,6 +38,7 @@ import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.EnumSetting;
+import net.wurstclient.settings.ItemListSetting;
 import net.wurstclient.util.RenderUtils;
 import net.wurstclient.util.RotationUtils;
 
@@ -63,6 +64,15 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 	private final EnumSetting<OnlyMob_> onlyMob =
 		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
+	private ItemListSetting onlyMob_0 = new ItemListSetting("OnlyMob_0",
+		"show only selected mob", "minecraft:allium",
+		"minecraft:azure_bluet", "minecraft:blue_orchid",
+		"minecraft:cornflower", "minecraft:dandelion", "minecraft:lilac",
+		"minecraft:lily_of_the_valley", "minecraft:orange_tulip",
+		"minecraft:oxeye_daisy", "minecraft:peony", "minecraft:pink_tulip",
+		"minecraft:poisonous_potato", "minecraft:poppy", "minecraft:red_tulip",
+		"minecraft:rose_bush", "minecraft:rotten_flesh", "minecraft:sunflower",
+		"minecraft:wheat_seeds", "minecraft:white_tulip");
 
 	private final CheckboxSetting showMobsNames = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
@@ -80,6 +90,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 		addSetting(filterMobs);
 		addSetting(onlyMob);
+		addSetting(onlyMob_0);
 //		addSetting(showMobsNames);
 	}
 	
