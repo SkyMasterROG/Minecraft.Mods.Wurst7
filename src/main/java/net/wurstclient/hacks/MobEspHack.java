@@ -8,6 +8,7 @@
 package net.wurstclient.hacks;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -32,13 +33,20 @@ import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
+import net.wurstclient.clickgui.ClickGui;
+import net.wurstclient.clickgui.Component;
+import net.wurstclient.clickgui.Window;
 import net.wurstclient.events.CameraTransformViewBobbingListener;
 import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
+import net.wurstclient.hud.IngameHUD;
+import net.wurstclient.settings.BlockListSetting;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.settings.ItemListSetting;
+import net.wurstclient.settings.MobListSetting;
+import net.wurstclient.settings.Setting;
 import net.wurstclient.util.RenderUtils;
 import net.wurstclient.util.RotationUtils;
 
@@ -64,15 +72,32 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 	private final EnumSetting<OnlyMob_> onlyMob =
 		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
-	private ItemListSetting onlyMob_0 = new ItemListSetting("OnlyMob_0",
-		"show only selected mob", "minecraft:allium",
-		"minecraft:azure_bluet", "minecraft:blue_orchid",
-		"minecraft:cornflower", "minecraft:dandelion", "minecraft:lilac",
-		"minecraft:lily_of_the_valley", "minecraft:orange_tulip",
-		"minecraft:oxeye_daisy", "minecraft:peony", "minecraft:pink_tulip",
-		"minecraft:poisonous_potato", "minecraft:poppy", "minecraft:red_tulip",
-		"minecraft:rose_bush", "minecraft:rotten_flesh", "minecraft:sunflower",
-		"minecraft:wheat_seeds", "minecraft:white_tulip");
+	private final MobListSetting onlyMob_0 = new MobListSetting("Ores", "",
+		"minecraft:ancient_debris", "minecraft:anvil", "minecraft:beacon",
+		"minecraft:bone_block", "minecraft:bookshelf",
+		"minecraft:brewing_stand", "minecraft:chain_command_block",
+		"minecraft:chest", "minecraft:clay", "minecraft:coal_block",
+		"minecraft:coal_ore", "minecraft:command_block", "minecraft:copper_ore",
+		"minecraft:crafting_table", "minecraft:deepslate_coal_ore",
+		"minecraft:deepslate_copper_ore", "minecraft:deepslate_diamond_ore",
+		"minecraft:deepslate_gold_ore", "minecraft:deepslate_iron_ore",
+		"minecraft:deepslate_lapis_ore", "minecraft:deepslate_redstone_ore",
+		"minecraft:diamond_block", "minecraft:diamond_ore",
+		"minecraft:dispenser", "minecraft:dropper", "minecraft:emerald_block",
+		"minecraft:emerald_ore", "minecraft:enchanting_table",
+		"minecraft:end_portal", "minecraft:end_portal_frame",
+		"minecraft:ender_chest", "minecraft:furnace", "minecraft:glowstone",
+		"minecraft:gold_block", "minecraft:gold_ore", "minecraft:hopper",
+		"minecraft:iron_block", "minecraft:iron_ore", "minecraft:ladder",
+		"minecraft:lapis_block", "minecraft:lapis_ore", "minecraft:lava",
+		"minecraft:lodestone", "minecraft:mossy_cobblestone",
+		"minecraft:nether_gold_ore", "minecraft:nether_portal",
+		"minecraft:nether_quartz_ore", "minecraft:raw_copper_block",
+		"minecraft:raw_gold_block", "minecraft:raw_iron_block",
+		"minecraft:redstone_block", "minecraft:redstone_ore",
+		"minecraft:repeating_command_block", "minecraft:spawner",
+		"minecraft:tnt", "minecraft:torch", "minecraft:trapped_chest",
+		"minecraft:water");
 
 	private final CheckboxSetting showMobsNames = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
@@ -99,20 +124,29 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	{
 		if(filterMobs.isChecked()) {
 //			filterMobs.lock(filterMobs);
-						
-			onlyMob.getComponent().setHeight(filterMobs.getComponent().getHeight());
-
-			/*Component w_comp = onlyMob.getComponent();
-			if(w_comp != null) {
+			
+			Component onlyMobCom = onlyMob.getComponent();
+			if(onlyMobCom != null) {
 				Window w_cgui_wdw = onlyMob.getComponent().getParent();
 				if(w_cgui_wdw != null) {
 					int i_tmp = onlyMob.getComponent().getParent().countChildren();
-					w_comp = onlyMob.getComponent().getParent().getChild(0);
+					onlyMobCom = onlyMob.getComponent().getParent().getChild(0);
 
 					//onlyMob.getComponent().getParent().setInvisible(true);
 					//onlyMob.getComponent().getParent().setInvisible(filterMobs.isChecked());
 				}
-			}*/
+			}
+
+			ClickGui gui = this.WURST.getGui();
+			if (null != gui) {
+				gui.getTxtColor();
+
+				/*Window win = new Window("test");
+				win.validate();
+				gui.addWindow(win);;*/
+			}
+
+			
 						
 //			filterMobs.unlock();
 		} else {
@@ -131,13 +165,6 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	@Override
 	public void onDisable()
 	{
-/*		if(filterMobs.isChecked())
-			onlyMob.getComponent().getParent().setInvisible(false);
-		//onlyMob.getComponent().getParent().setInvisible(filterMobs.isChecked());
-*/
-				//Component w_comp = onlyMob.getComponent();
-		//Component w_comp_this = this.WURST.getHax().mobEspHack.finalize();
-
 		EVENTS.remove(UpdateListener.class, this);
 		EVENTS.remove(CameraTransformViewBobbingListener.class, this);
 		EVENTS.remove(RenderListener.class, this);
