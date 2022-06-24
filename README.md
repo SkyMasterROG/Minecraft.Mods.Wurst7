@@ -30,9 +30,9 @@ Requirements: [JDK 17](https://adoptium.net/?variant=openjdk17&jvmVariant=hotspo
 ```
 ./gradlew.bat genSources
 ./gradlew.bat eclipse
+```
 
 1.b Run these two commands in PowerShell:
-
 ```
 ./gradlew.bat genSources
 ./gradlew.bat vscode

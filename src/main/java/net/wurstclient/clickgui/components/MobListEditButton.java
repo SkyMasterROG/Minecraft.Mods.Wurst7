@@ -22,9 +22,9 @@ import net.minecraft.util.math.Matrix4f;
 import net.wurstclient.WurstClient;
 import net.wurstclient.clickgui.ClickGui;
 import net.wurstclient.clickgui.Component;
-import net.wurstclient.clickgui.screens.EditBlockListScreen;
+//import net.wurstclient.clickgui.screens.EditBlockListScreen;
 import net.wurstclient.clickgui.screens.EditMobListScreen;
-import net.wurstclient.settings.BlockListSetting;
+//import net.wurstclient.settings.BlockListSetting;
 import net.wurstclient.settings.MobListSetting;
 
 public final class MobListEditButton extends Component
@@ -123,7 +123,7 @@ public final class MobListEditButton extends Component
 		// setting name
 		RenderSystem.setShaderColor(1, 1, 1, 1);
 		TextRenderer fr = WurstClient.MC.textRenderer;
-		String text = setting.getName() + ": " + setting.getBlockNames().size();
+		String text = setting.getName() + ": " + setting.getMobIDs().size();
 		fr.draw(matrixStack, text, x1, y1 + 2, txtColor);
 		fr.draw(matrixStack, "Edit...", x3 + 2, y1 + 2, txtColor);
 		GL11.glEnable(GL11.GL_BLEND);
@@ -133,7 +133,7 @@ public final class MobListEditButton extends Component
 	public int getDefaultWidth()
 	{
 		TextRenderer fr = WurstClient.MC.textRenderer;
-		String text = setting.getName() + ": " + setting.getBlockNames().size();
+		String text = setting.getName() + ": " + setting.getMobIDs().size();
 		return fr.getWidth(text) + buttonWidth + 6;
 	}
 	

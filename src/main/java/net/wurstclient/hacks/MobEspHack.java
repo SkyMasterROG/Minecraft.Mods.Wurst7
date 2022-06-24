@@ -41,10 +41,8 @@ import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
 import net.wurstclient.hud.IngameHUD;
-import net.wurstclient.settings.BlockListSetting;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.EnumSetting;
-import net.wurstclient.settings.ItemListSetting;
 import net.wurstclient.settings.MobListSetting;
 import net.wurstclient.settings.Setting;
 import net.wurstclient.util.RenderUtils;
@@ -72,32 +70,10 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 	private final EnumSetting<OnlyMob_> onlyMob =
 		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
-	private final MobListSetting onlyMob_0 = new MobListSetting("Ores", "",
-		"minecraft:ancient_debris", "minecraft:anvil", "minecraft:beacon",
-		"minecraft:bone_block", "minecraft:bookshelf",
-		"minecraft:brewing_stand", "minecraft:chain_command_block",
-		"minecraft:chest", "minecraft:clay", "minecraft:coal_block",
-		"minecraft:coal_ore", "minecraft:command_block", "minecraft:copper_ore",
-		"minecraft:crafting_table", "minecraft:deepslate_coal_ore",
-		"minecraft:deepslate_copper_ore", "minecraft:deepslate_diamond_ore",
-		"minecraft:deepslate_gold_ore", "minecraft:deepslate_iron_ore",
-		"minecraft:deepslate_lapis_ore", "minecraft:deepslate_redstone_ore",
-		"minecraft:diamond_block", "minecraft:diamond_ore",
-		"minecraft:dispenser", "minecraft:dropper", "minecraft:emerald_block",
-		"minecraft:emerald_ore", "minecraft:enchanting_table",
-		"minecraft:end_portal", "minecraft:end_portal_frame",
-		"minecraft:ender_chest", "minecraft:furnace", "minecraft:glowstone",
-		"minecraft:gold_block", "minecraft:gold_ore", "minecraft:hopper",
-		"minecraft:iron_block", "minecraft:iron_ore", "minecraft:ladder",
-		"minecraft:lapis_block", "minecraft:lapis_ore", "minecraft:lava",
-		"minecraft:lodestone", "minecraft:mossy_cobblestone",
-		"minecraft:nether_gold_ore", "minecraft:nether_portal",
-		"minecraft:nether_quartz_ore", "minecraft:raw_copper_block",
-		"minecraft:raw_gold_block", "minecraft:raw_iron_block",
-		"minecraft:redstone_block", "minecraft:redstone_ore",
-		"minecraft:repeating_command_block", "minecraft:spawner",
-		"minecraft:tnt", "minecraft:torch", "minecraft:trapped_chest",
-		"minecraft:water");
+	// https://minecraft.fandom.com/wiki/Category:Entities
+	private final MobListSetting onlyMob_0 = new MobListSetting("Mob List", "",
+		"minecraft:zombie_villager", "minecraft:warden", "minecraft:bee",
+		"minecraft:squid", "minecraft:wither_skeleton", "minecraft:shulker", "minecraft:slime", "minecraft:wolf", "minecraft:axolotl");
 
 	private final CheckboxSetting showMobsNames = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
@@ -241,7 +217,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
 
-		if(/*true || */showMobsNames.isChecked())
+		if(showMobsNames.isChecked())
 			renderNames(partialTicks);
 		
 		matrixStack.pop();

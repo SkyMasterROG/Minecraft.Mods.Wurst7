@@ -22,6 +22,7 @@ import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Matrix4f;
@@ -368,10 +369,15 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 
 	private void etyCustomName(Entity ety, boolean hasCount, int iCount, boolean visible) {
 		//String sName = ety.getName().asFormattedString();
-		String sName = ety.getName().toString();
+		String sName = ety.getName().getString();
+		
+		Text text = ety.getName();
+		String textStr = text.getString();
+		sName = textStr;
+		
 		if(ety.hasCustomName())
 			//sName = ety.getCustomName().asFormattedString();
-			sName = ety.getCustomName().toString();
+			sName = ety.getCustomName().getString();
 
 		String sJson = "{\"text\":\"";
 		String sPat = "x ";

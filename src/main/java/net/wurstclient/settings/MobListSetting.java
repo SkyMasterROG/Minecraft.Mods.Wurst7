@@ -18,70 +18,76 @@ import java.util.Set;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
-import net.minecraft.block.Block;
+//import net.minecraft.block.Block;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
+//import net.minecraft.util.registry.RegistryKey;
 import net.wurstclient.WurstClient;
 import net.wurstclient.clickgui.Component;
-import net.wurstclient.clickgui.components.BlockListEditButton;
+//import net.wurstclient.clickgui.components.BlockListEditButton;
 import net.wurstclient.clickgui.components.MobListEditButton;
 import net.wurstclient.keybinds.PossibleKeybind;
-import net.wurstclient.util.BlockUtils;
+//import net.wurstclient.util.BlockUtils;
 import net.wurstclient.util.json.JsonException;
 import net.wurstclient.util.json.JsonUtils;
 import net.wurstclient.util.json.WsonArray;
 
 public final class MobListSetting extends Setting
 {
-	private final ArrayList<String> blockNames = new ArrayList<>();
-	private final String[] defaultNames;
+	private final ArrayList<String> mobIDs = new ArrayList<>();
+	private final String[] defaultIDs;
 	
 	public MobListSetting(String name, String description, String... mobs)
 	{
 		super(name, description);
 		
-		Identifier id = new Identifier("minecraft:zombie_villager");
-		net.minecraft.entity.EntityType<?> type = Registry.ENTITY_TYPE.get(id);
-		//Registry<net.minecraft.entity.EntityType.ZOMBIE_VILLAGER> key;
-		//Registry.ENTITY_TYPE.get(net.minecraft.entity.EntityType.ZOMBIE_VILLAGER);
-		//Registry.ENTITY_TYPE_KEY;
-		/*Arrays.stream(mobs).parallel()
-			.map(s -> Registry.BLOCK.get(new Identifier(s)))
-			.filter(Objects::nonNull).map(BlockUtils::getName).distinct()
-			.sorted().forEachOrdered(s -> blockNames.add(s));*/
-		defaultNames = blockNames.toArray(new String[0]);
+		/*Identifier id = Identifier.tryParse("minecraft:zombie_villager");
+		EntityType<?> type = Registry.ENTITY_TYPE.get(id);
+		Identifier idET = EntityType.getId(type);
+		String typeId =  idET.toString();
+		Boolean isValid =  Identifier.isValid("minecraft:zombie_villager");*/
+
+		Arrays.stream(mobs).parallel()
+			.map(s -> Registry.ENTITY_TYPE.get(Identifier.tryParse(s)))
+			.filter(Objects::nonNull).map(s -> EntityType.getId(s).toString()).distinct()
+			.sorted().forEachOrdered(s -> mobIDs.add(s));
+
+		defaultIDs = mobIDs.toArray(new String[0]);
 	}
 	
-	public List<String> getBlockNames()
+	public List<String> getMobIDs()
 	{
-		return Collections.unmodifiableList(blockNames);
+		return Collections.unmodifiableList(mobIDs);
 	}
 	
-	public void add(Block block)
+	public void add(EntityType<?> mobType)
 	{
-		String name = BlockUtils.getName(block);
-		if(Collections.binarySearch(blockNames, name) >= 0)
+		Identifier mobId = EntityType.getId(mobType);
+		String mobIdStr = mobId.toString();
+		if(Collections.binarySearch(mobIDs, mobIdStr) >= 0)
 			return;
 		
-		blockNames.add(name);
-		Collections.sort(blockNames);
+		mobIDs.add(mobIdStr);
+		Collections.sort(mobIDs);
 		WurstClient.INSTANCE.saveSettings();
 	}
 	
 	public void remove(int index)
 	{
-		if(index < 0 || index >= blockNames.size())
+		if(index < 0 || index >= mobIDs.size())
 			return;
 		
-		blockNames.remove(index);
+		mobIDs.remove(index);
 		WurstClient.INSTANCE.saveSettings();
 	}
 	
 	public void resetToDefaults()
 	{
-		blockNames.clear();
-		blockNames.addAll(Arrays.asList(defaultNames));
+		mobIDs.clear();
+		mobIDs.addAll(Arrays.asList(defaultIDs));
 		WurstClient.INSTANCE.saveSettings();
 	}
 	
@@ -94,18 +100,16 @@ public final class MobListSetting extends Setting
 	@Override
 	public void fromJson(JsonElement json)
 	{
-		try
-		{
+		try {
 			WsonArray wson = JsonUtils.getAsArray(json);
-			blockNames.clear();
-			
+			mobIDs.clear();
+
 			wson.getAllStrings().parallelStream()
-				.map(s -> Registry.BLOCK.get(new Identifier(s)))
-				.filter(Objects::nonNull).map(BlockUtils::getName).distinct()
-				.sorted().forEachOrdered(s -> blockNames.add(s));
+				.map(s -> Registry.ENTITY_TYPE.get(Identifier.tryParse(s)))
+				.filter(Objects::nonNull).map(s -> EntityType.getId(s).toString()).distinct()
+				.sorted().forEachOrdered(s -> mobIDs.add(s));
 			
-		}catch(JsonException e)
-		{
+		} catch(JsonException e) {
 			e.printStackTrace();
 			resetToDefaults();
 		}
@@ -115,7 +119,7 @@ public final class MobListSetting extends Setting
 	public JsonElement toJson()
 	{
 		JsonArray json = new JsonArray();
-		blockNames.forEach(s -> json.add(s));
+		mobIDs.forEach(s -> json.add(s));
 		return json;
 	}
 	
@@ -124,7 +128,7 @@ public final class MobListSetting extends Setting
 	{
 		String fullName = featureName + " " + getName();
 		
-		String command = ".blocklist " + featureName.toLowerCase() + " ";
+		String command = ".moblist " + featureName.toLowerCase() + " ";
 		command += getName().toLowerCase().replace(" ", "_") + " ";
 		
 		LinkedHashSet<PossibleKeybind> pkb = new LinkedHashSet<>();

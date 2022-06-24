@@ -9,13 +9,15 @@ package net.wurstclient.clickgui.screens;
 
 import java.util.List;
 
+import javax.swing.text.html.parser.Entity;
+
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.Blocks;
+//import net.minecraft.block.Block;
+//import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
@@ -24,58 +26,69 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.command.EntityDataObject;
+import net.minecraft.datafixer.fix.EntityIdFix;
+import net.minecraft.entity.EntityStatuses;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
-import net.wurstclient.settings.BlockListSetting;
+import net.minecraft.util.Identifier;
+import net.minecraft.util.InvalidIdentifierException;
+import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
+//import net.wurstclient.settings.BlockListSetting;
 import net.wurstclient.settings.MobListSetting;
-import net.wurstclient.util.BlockUtils;
+//import net.wurstclient.util.BlockUtils;
 import net.wurstclient.util.ListWidget;
+import net.wurstclient.util.MathUtils;
 
 public final class EditMobListScreen extends Screen
 {
 	private final Screen prevScreen;
-	private final MobListSetting blockList;
+	private final MobListSetting mobList;
 	
 	private ListGui listGui;
-	private TextFieldWidget blockNameField;
+	private TextFieldWidget mobIdField;
 	private ButtonWidget addButton;
 	private ButtonWidget removeButton;
 	private ButtonWidget doneButton;
 	
-	private Block blockToAdd;
+	private EntityType<?> entityToAdd;
 	
 	public EditMobListScreen(Screen prevScreen, MobListSetting blockList)
 	{
 		super(Text.literal(""));
 		this.prevScreen = prevScreen;
-		this.blockList = blockList;
+		this.mobList = blockList;
 	}
 	
 	@Override
 	public void init()
 	{
-		listGui = new ListGui(client, this, blockList.getBlockNames());
+		listGui = new ListGui(client, this, mobList.getMobIDs());
 		
-		blockNameField = new TextFieldWidget(client.textRenderer,
+		mobIdField = new TextFieldWidget(client.textRenderer,
 			width / 2 - 152, height - 55, 150, 18, Text.literal(""));
-		addSelectableChild(blockNameField);
-		blockNameField.setMaxLength(256);
+		addSelectableChild(mobIdField);
+		mobIdField.setMaxLength(256);
 		
 		addDrawableChild(addButton = new ButtonWidget(width / 2 - 2,
 			height - 56, 30, 20, Text.literal("Add"), b -> {
-				blockList.add(blockToAdd);
-				blockNameField.setText("");
+				mobList.add(entityToAdd);
+				mobIdField.setText("");
 			}));
 		
 		addDrawableChild(removeButton = new ButtonWidget(width / 2 + 52,
 			height - 56, 100, 20, Text.literal("Remove Selected"),
-			b -> blockList.remove(listGui.selected)));
+			b -> mobList.remove(listGui.selected)));
 		
 		addDrawableChild(new ButtonWidget(width - 108, 8, 100, 20,
 			Text.literal("Reset to Defaults"),
 			b -> client.setScreen(new ConfirmScreen(b2 -> {
 				if(b2)
-					blockList.resetToDefaults();
+					mobList.resetToDefaults();
 				client.setScreen(EditMobListScreen.this);
 			}, Text.literal("Reset to Defaults"),
 				Text.literal("Are you sure?")))));
@@ -90,7 +103,7 @@ public final class EditMobListScreen extends Screen
 	{
 		boolean childClicked = super.mouseClicked(mouseX, mouseY, mouseButton);
 		
-		blockNameField.mouseClicked(mouseX, mouseY, mouseButton);
+		mobIdField.mouseClicked(mouseX, mouseY, mouseButton);
 		listGui.mouseClicked(mouseX, mouseY, mouseButton);
 		
 		if(!childClicked && (mouseX < (width - 220) / 2
@@ -135,7 +148,7 @@ public final class EditMobListScreen extends Screen
 			break;
 			
 			case GLFW.GLFW_KEY_DELETE:
-			if(!blockNameField.isFocused())
+			if(!mobIdField.isFocused())
 				removeButton.onPress();
 			break;
 			
@@ -153,11 +166,11 @@ public final class EditMobListScreen extends Screen
 	@Override
 	public void tick()
 	{
-		blockNameField.tick();
+		mobIdField.tick();
 		
-		String nameOrId = blockNameField.getText();
-		blockToAdd = BlockUtils.getBlockFromNameOrID(nameOrId);
-		addButton.active = blockToAdd != null;
+		String idStr = mobIdField.getText();
+		entityToAdd = getMobFromName(idStr);
+		addButton.active = entityToAdd != null;
 		
 		removeButton.active =
 			listGui.selected >= 0 && listGui.selected < listGui.list.size();
@@ -170,22 +183,22 @@ public final class EditMobListScreen extends Screen
 		listGui.render(matrixStack, mouseX, mouseY, partialTicks);
 		
 		drawCenteredText(matrixStack, client.textRenderer,
-			blockList.getName() + " (" + listGui.getItemCount() + ")",
+			mobList.getName() + " (" + listGui.getItemCount() + ")",
 			width / 2, 12, 0xffffff);
 		
 		matrixStack.push();
 		matrixStack.translate(0, 0, 300);
 		
-		blockNameField.render(matrixStack, mouseX, mouseY, partialTicks);
+		mobIdField.render(matrixStack, mouseX, mouseY, partialTicks);
 		super.render(matrixStack, mouseX, mouseY, partialTicks);
 		
 		matrixStack.translate(-64 + width / 2 - 152, 0, 0);
 		
-		if(blockNameField.getText().isEmpty() && !blockNameField.isFocused())
+		if(mobIdField.getText().isEmpty() && !mobIdField.isFocused())
 			drawStringWithShadow(matrixStack, client.textRenderer,
-				"block name or ID", 68, height - 50, 0x808080);
+				"mob id", 68, height - 50, 0x808080);
 		
-		int border = blockNameField.isFocused() ? 0xffffffff : 0xffa0a0a0;
+		int border = mobIdField.isFocused() ? 0xffffffff : 0xffa0a0a0;
 		int black = 0xff000000;
 		
 		fill(matrixStack, 48, height - 56, 64, height - 36, border);
@@ -200,7 +213,7 @@ public final class EditMobListScreen extends Screen
 		
 		matrixStack.pop();
 		
-		listGui.renderIconAndGetName(matrixStack, new ItemStack(blockToAdd),
+		listGui.renderIconAndGetName(matrixStack, entityToAdd,
 			width / 2 - 164, height - 52, false);
 	}
 	
@@ -262,24 +275,35 @@ public final class EditMobListScreen extends Screen
 		protected void renderItem(MatrixStack matrixStack, int index, int x,
 			int y, int var4, int var5, int var6, float partialTicks)
 		{
-			String name = list.get(index);
-			Block block = BlockUtils.getBlockFromName(name);
-			ItemStack stack = new ItemStack(block);
+			String idStr = list.get(index);
+			//Block block = BlockUtils.getBlockFromName(name);
+			Identifier id =  Identifier.tryParse(idStr);
+			EntityType<?> entityType = null;
+			try {
+				entityType = Registry.ENTITY_TYPE.get(id);
+			} catch(InvalidIdentifierException e) {
+				entityType = Registry.ENTITY_TYPE.get(0);
+			}
+
+			//ItemStack stack = new ItemStack(block);
 			TextRenderer fr = mc.textRenderer;
 			
 			String displayName =
-				renderIconAndGetName(matrixStack, stack, x + 1, y + 1, true);
+				renderIconAndGetName(matrixStack, entityType, x + 1, y + 1, true);
+
 			fr.draw(matrixStack, displayName, x + 28, y, 0xf0f0f0);
-			fr.draw(matrixStack, name, x + 28, y + 9, 0xa0a0a0);
+			fr.draw(matrixStack, idStr, x + 28, y + 9, 0xa0a0a0);
+
 			fr.draw(matrixStack,
-				"ID: " + Block.getRawIdFromState(block.getDefaultState()),
+				//"ID: " + Block.getRawIdFromState(block.getDefaultState()),
+				"ID: " + idStr,
 				x + 28, y + 18, 0xa0a0a0);
 		}
-		
+
 		private String renderIconAndGetName(MatrixStack matrixStack,
-			ItemStack stack, int x, int y, boolean large)
+			EntityType<?> entityType, int x, int y, boolean large)
 		{
-			if(stack.isEmpty())
+			if(null == entityType)
 			{
 				MatrixStack modelViewStack = RenderSystem.getModelViewStack();
 				modelViewStack.push();
@@ -290,8 +314,11 @@ public final class EditMobListScreen extends Screen
 					modelViewStack.scale(0.75F, 0.75F, 0.75F);
 				
 				DiffuseLighting.enableGuiDepthLighting();
+
+				Item item = Registry.ITEM.get(Identifier.tryParse("minecraft:player_head"));
 				mc.getItemRenderer().renderInGuiWithOverrides(
-					new ItemStack(Blocks.GRASS_BLOCK), 0, 0);
+					item.getDefaultStack(), 0, 0);
+
 				DiffuseLighting.disableGuiDepthLighting();
 				
 				modelViewStack.pop();
@@ -308,8 +335,8 @@ public final class EditMobListScreen extends Screen
 				matrixStack.pop();
 				
 				return "\u00a7ounknown block\u00a7r";
-				
 			}
+
 			MatrixStack modelViewStack = RenderSystem.getModelViewStack();
 			modelViewStack.push();
 			modelViewStack.translate(x, y, 0);
@@ -319,13 +346,37 @@ public final class EditMobListScreen extends Screen
 				modelViewStack.scale(0.75F, 0.75F, 0.75F);
 			
 			DiffuseLighting.enableGuiDepthLighting();
-			mc.getItemRenderer().renderInGuiWithOverrides(stack, 0, 0);
+
+			Identifier idET = EntityType.getId(entityType);
+			Identifier idItem = Identifier.tryParse(idET.toString() + "_spawn_egg");
+			Item item = Registry.ITEM.get(idItem);
+			mc.getItemRenderer().renderInGuiWithOverrides(
+				item.getDefaultStack(), 0, 0);
+
 			DiffuseLighting.disableGuiDepthLighting();
 			
 			modelViewStack.pop();
 			RenderSystem.applyModelViewMatrix();
 			
-			return stack.getName().getString();
+			//return entityType.getUntranslatedName();
+			return entityType.getName().getString();
 		}
+	}
+
+	public EntityType<?> getMobFromName(String name)
+	{
+		try {
+			if (!name.isEmpty()) {
+				Identifier id = Identifier.tryParse(name);
+				if (Registry.ENTITY_TYPE.containsId(id)) {
+					return Registry.ENTITY_TYPE.get(id);
+				}
+			}
+			
+		} catch(InvalidIdentifierException e) {
+			//return null;
+		}
+
+		return null;
 	}
 }
