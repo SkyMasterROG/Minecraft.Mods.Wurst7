@@ -14,6 +14,8 @@ import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.client.font.TextRenderer;
+import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.BufferBuilder;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
@@ -23,16 +25,21 @@ import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Matrix4f;
+import net.minecraft.util.math.Quaternion;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3f;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
+import net.wurstclient.WurstClient;
 import net.wurstclient.events.CameraTransformViewBobbingListener;
 import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
+import net.wurstclient.other_features.WurstLogoOtf;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.ColorSetting;
 import net.wurstclient.settings.EnumSetting;
@@ -61,6 +68,8 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			+ "19w39a changed how nameplates work\n"
 			+ "and we haven't figured it out yet.",
 		true);
+
+	//private static final Identifier texture = new Identifier("wurst", "wurst_128.png");
 
 	private final CheckboxSetting showMore = new CheckboxSetting("Show more \"Items\"",
 		"Shows \"Experience orb\", too",
@@ -144,6 +153,9 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
 
+		if(names.isChecked())
+			renderNames(matrixStack, partialTicks, regionX, regionZ);
+
 		if(showMore.isChecked())
 			renderBoxesMore(partialTicks);
 		
@@ -187,57 +199,6 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 				matrixStack.pop();
 			}
 
-			etyCustomName(e, e.getStack().isStackable(), e.getStack().getCount(), names.isChecked());
-			/*if(names.isChecked()) {
-				// ItemStack stack = e.getStack();
-				// GameRenderer.renderFloatingText(MC.textRenderer,
-				// stack.getCount() + "x "
-				// + stack.getName().asFormattedString(),
-				// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
-				// MC.getEntityRenderManager().cameraPitch, false);
-				// GL11.glDisable(GL11.GL_LIGHTING);
-
-				net.minecraft.item.ItemStack stack = e.getStack();
-				
-
-				String sName = stack.getName().asFormattedString();
-				if(e.hasCustomName())
-					sName = e.getCustomName().asFormattedString();
-
-				String sJson = "{\"text\":\"";
-				String sPat = "x ";
-				boolean hasChanged = false;
-
-				if(sName.contains(sPat)) {
-					String sArr[] = sName.split(sPat);
-					try {
-						//int iCount = Integer.parseInt(sArr[0]);
-						if(stack.getCount() != Integer.parseInt(sArr[0])) {
-							hasChanged = true;
-							sName = stack.getName().asFormattedString();
-							sJson = sJson + Integer.toString(stack.getCount());
-						}
-
-					} catch (Exception ex) {
-						new net.wurstclient.command.CmdSyntaxError("Invalid" + ex.getMessage());
-					}
-				} else {
-					hasChanged = true;
-					sJson = sJson + Integer.toString(stack.getCount());
-				}
-
-				sJson = sJson + sPat + sName + "\"}";
-				if(hasChanged) {
-					//net.minecraft.text.Text mcTxt = net.minecraft.text.Text.Serializer.fromJson(sJson);
-					//e.setCustomName(mcTxt);
-					e.setCustomName(net.minecraft.text.Text.Serializer.fromJson(sJson));
-				}
-
-				if(!e.isCustomNameVisible()) {
-					e.setCustomNameVisible(true);
-				}
-			}*/
-			
 			matrixStack.pop();
 		}
 	}
@@ -367,6 +328,132 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		}
 	}
 
+	private void renderNames(MatrixStack matrixStack, double partialTicks, int regionX, int regionZ) {
+		// ItemStack stack = e.getStack();
+		// GameRenderer.renderFloatingText(MC.textRenderer,
+		// stack.getCount() + "x "
+		// + stack.getName().asFormattedString(),
+		// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
+		// MC.getEntityRenderManager().cameraPitch, false);
+		// GL11.glDisable(GL11.GL_LIGHTING);
+
+		//float extraSize = boxSize.getSelected().extraSize;
+		
+		for(ItemEntity e : items)
+		{
+			matrixStack.push();
+			
+			String version =
+				"eYaw " + String.valueOf(e.prevYaw) +
+				", ePitch " + String.valueOf(e.prevPitch) +
+				" | pBYaw " + String.valueOf(MC.player.prevBodyYaw) +
+				" | pHYaw " + String.valueOf(MC.player.prevHeadYaw) +
+				" | pYaw " + String.valueOf(MC.player.prevYaw);//getVersionString();
+			TextRenderer tr = WurstClient.MC.textRenderer;
+
+			// translate to center
+			//Window sr = MC.getWindow();
+			int msgWidth = MC.textRenderer.getWidth(version);
+			//matrixStack.translate(mStackTr[0] / 2 - msgWidth / 2,
+			//	mStackTr[1], mStackTr[2]);
+
+			double[] mStackTr = {
+				e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
+				e.prevY + (e.getY() - e.prevY) * partialTicks,
+				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ
+			};
+			//matrixStack.translate(
+			//	e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
+			//	e.prevY + (e.getY() - e.prevY) * partialTicks,
+			//	e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ);
+			// set origin pos
+			matrixStack.translate(mStackTr[0], mStackTr[1], mStackTr[2]);
+			//matrixStack.translate(mStackTr[0] - (msgWidth / 2), mStackTr[1], mStackTr[2]);
+
+			// flip text over Z
+			matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
+			
+			// turn to player
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
+			
+			// scale text
+			matrixStack.scale(0.04F, 0.04F, 0.04F);
+
+			// center text
+			matrixStack.translate(mStackTr[0] - (msgWidth / 2), 0, 0);
+
+			double eW = e.getWidth();
+			double eH = e.getHeight();
+			//matrixStack.scale(e.getWidth(), e.getHeight(), e.getWidth());
+
+			float eYaw = e.prevYaw;
+			float ePitch = e.prevPitch;
+			float eD = MC.player.distanceTo(e);
+			float f = MC.player.distanceTo(e) / 20F;//float f = MC.player.distanceTo(e) / 20F;
+			//matrixStack.scale(f, f, f);
+
+			float pBYaw = MC.player.prevBodyYaw;
+			float pHYaw = MC.player.prevHeadYaw;
+			float pYaw = MC.player.prevYaw;
+			float pPitch = MC.player.getPitch();
+			
+			// flip text over Z
+			//matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
+			
+			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-MC.player.getYaw() + 180));
+			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevYaw));
+
+			// turn to player
+			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
+			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.getHeadYaw()));
+			
+			//Quaternion eQ = new Quaternion(x, y, z, degrees)//Quaternion(axis, rotationAngle, degrees);
+			//matrixStack.multiply(quaternion);
+
+			Matrix4f eM4f = new Matrix4f();
+			//matrixStack.multiplyPositionMatrix(matrix);
+
+			double eRD = e.getRenderDistanceMultiplier();//Entity.getRenderDistanceMultiplier();
+			
+			WurstLogoOtf otf = WurstClient.INSTANCE.getOtfs().wurstLogoOtf;
+			//if(!otf.isVisible())
+			//	return;
+			
+			
+			
+			// draw version background
+			GL11.glEnable(GL11.GL_BLEND);
+			//GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
+			
+			float[] color;
+			//if(WurstClient.INSTANCE.getHax().rainbowUiHack.isEnabled())
+			//	color = WurstClient.INSTANCE.getGui().getAcColor();
+			//else
+				color = otf.getBackgroundColor();
+			
+			//drawQuads(matrixStack, 0, 6, tr.getWidth(version) + 76, 17, color[0],
+			//	color[1], color[2], 0.5F);
+			
+			// draw version string
+			//GL11.glEnable(GL11.GL_CULL_FACE);
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+
+			float angle = 1.0F;
+			//GL11.glRotatef(angle, 0, 0, 1.0F);
+
+			int iColor = otf.getTextColor();
+			tr.draw(matrixStack, version, 0, 0, 0xF0F0F000);
+			
+			// draw Wurst logo
+			RenderSystem.setShaderColor(1, 1, 1, 1);
+			GL11.glEnable(GL11.GL_BLEND);
+			//RenderSystem.setShaderTexture(0, texture);
+			//DrawableHelper.drawTexture(matrixStack, 0, 3, 0, 0, 72, 18, 72, 18);
+
+			matrixStack.pop();
+		}
+	}
+
 	private void etyCustomName(Entity ety, boolean hasCount, int iCount, boolean visible) {
 		//String sName = ety.getName().asFormattedString();
 		String sName = ety.getName().getString();
@@ -374,6 +461,11 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		Text text = ety.getName();
 		String textStr = text.getString();
 		sName = textStr;
+
+		/*GameRenderer.;
+		RenderSystem.;
+		RenderUtils.;*/
+		
 		
 		if(ety.hasCustomName())
 			//sName = ety.getCustomName().asFormattedString();
