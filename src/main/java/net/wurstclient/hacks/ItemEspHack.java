@@ -14,6 +14,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.render.BufferBuilder;
@@ -22,16 +23,21 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.client.util.math.Vector3d;
+import net.minecraft.command.argument.Vec2ArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.ai.brain.EntityLookTarget;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Quaternion;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Vec3f;
+import net.minecraft.util.math.Vec3i;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.WurstClient;
@@ -343,44 +349,49 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		{
 			matrixStack.push();
 			
-			String version =
-				"eYaw " + String.valueOf(e.prevYaw) +
-				", ePitch " + String.valueOf(e.prevPitch) +
-				" | pBYaw " + String.valueOf(MC.player.prevBodyYaw) +
-				" | pHYaw " + String.valueOf(MC.player.prevHeadYaw) +
-				" | pYaw " + String.valueOf(MC.player.prevYaw);//getVersionString();
+			// get last position
+			Vec3d pos = new Vec3d(
+				e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
+				e.prevY + (e.getY() - e.prevY) * partialTicks,
+				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ
+			);
+
+			// face to player
+			Vec2f lookAt = LookAt(e.getPos(), MC.player.getPos());
+
+			String name =
+				"Yaw " + String.valueOf(lookAt.y) +
+				", Pitch " + String.valueOf(lookAt.x);
 			TextRenderer tr = WurstClient.MC.textRenderer;
 
 			// translate to center
 			//Window sr = MC.getWindow();
-			int msgWidth = MC.textRenderer.getWidth(version);
+			int msgWidth = MC.textRenderer.getWidth(name);
 			//matrixStack.translate(mStackTr[0] / 2 - msgWidth / 2,
 			//	mStackTr[1], mStackTr[2]);
 
-			double[] mStackTr = {
-				e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
-				e.prevY + (e.getY() - e.prevY) * partialTicks,
-				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ
-			};
+			
 			//matrixStack.translate(
 			//	e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
 			//	e.prevY + (e.getY() - e.prevY) * partialTicks,
 			//	e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ);
 			// set origin pos
-			matrixStack.translate(mStackTr[0], mStackTr[1], mStackTr[2]);
+			matrixStack.translate(pos.x, pos.y, pos.z);
 			//matrixStack.translate(mStackTr[0] - (msgWidth / 2), mStackTr[1], mStackTr[2]);
 
 			// flip text over Z
 			matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
 			
-			// turn to player
-			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
-			
+			// face to player
+			//Vec3d lookAt = LookAt(e.getPos(), MC.player.getPos());
+			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
+			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float)lookAt.y));
+
 			// scale text
 			matrixStack.scale(0.04F, 0.04F, 0.04F);
 
 			// center text
-			matrixStack.translate(mStackTr[0] - (msgWidth / 2), 0, 0);
+			matrixStack.translate(pos.x - (msgWidth / 2), 0, 0);
 
 			double eW = e.getWidth();
 			double eH = e.getHeight();
@@ -442,7 +453,7 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			//GL11.glRotatef(angle, 0, 0, 1.0F);
 
 			int iColor = otf.getTextColor();
-			tr.draw(matrixStack, version, 0, 0, 0xF0F0F000);
+			tr.draw(matrixStack, name, 0, 0, 0xF0F0F000);
 			
 			// draw Wurst logo
 			RenderSystem.setShaderColor(1, 1, 1, 1);
@@ -452,6 +463,50 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 
 			matrixStack.pop();
 		}
+	}
+
+	//public static void LookAt(double px, double py, double pz , EntityPlayer me)
+	private Vec2f LookAt(Vec3d from , Vec3d to)
+	{
+		BlockPos bPos = new BlockPos(new Vec3d(from.x, from.y, from.z));
+		double length = bPos.getSquaredDistance(new Vec3i(to.x, to.y, to.z));
+
+		//net.minecraft.block.BlockState bState = new net.minecraft.block.BlockState();
+		//BlockEntity bEnt = new BlockEntity(net.minecraft.block.entity.BlockEntityType.SIGN, bPos, );
+
+		//Entity e = Entity
+		//EntityLookTarget eLookTar = new EntityLookTarget(entity, useEyeHeight);
+
+		double dirx = to.getX() - from.getX();
+		double diry = to.getY() - from.getY();
+		double dirz = to.getZ() - from.getZ();
+		Vec3d dir = to.subtract(from);
+
+		double len = Math.sqrt(dirx*dirx + diry*diry + dirz*dirz);
+		length = dir.horizontalLength();
+		length = dir.horizontalLengthSquared();
+		length = dir.length();
+		length = dir.lengthSquared();
+
+		dirx /= len;
+		diry /= len;
+		dirz /= len;
+		dir.multiply(length);//?? divity
+
+		double pitch = Math.asin(diry);
+		double yaw = Math.atan2(dirz, dirx);
+
+		//to degree
+		pitch = pitch * 180.0 / Math.PI;
+		yaw = yaw * 180.0 / Math.PI;
+
+		yaw += 90f;
+		//me.rotationPitch = (float)pitch;
+		//me.rotationYaw = (float)yaw;
+
+		//return new Vec3d(dirx, diry, dirz);
+		//return new Vec3d(pitch, yaw, 0);
+		return new Vec2f((float)pitch, (float)yaw);
 	}
 
 	private void etyCustomName(Entity ety, boolean hasCount, int iCount, boolean visible) {
