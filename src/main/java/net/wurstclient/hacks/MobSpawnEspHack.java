@@ -64,6 +64,9 @@ public final class MobSpawnEspHack extends Hack
 	
 	private final CheckboxSetting depthTest =
 		new CheckboxSetting("Depth test", true);
+
+	private final CheckboxSetting lightLevel =
+		new CheckboxSetting("Light Level", true);
 	
 	private final HashMap<Chunk, ChunkScanner> scanners = new HashMap<>();
 	private ExecutorService pool;
@@ -75,6 +78,7 @@ public final class MobSpawnEspHack extends Hack
 		addSetting(drawDistance);
 		addSetting(loadingSpeed);
 		addSetting(depthTest);
+		addSetting(lightLevel);
 	}
 	
 	@Override
