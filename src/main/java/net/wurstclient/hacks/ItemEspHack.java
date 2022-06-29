@@ -14,6 +14,7 @@ import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawableHelper;
@@ -28,6 +29,7 @@ import net.minecraft.command.argument.Vec2ArgumentType;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.ai.brain.EntityLookTarget;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -345,121 +347,99 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 
 		//float extraSize = boxSize.getSelected().extraSize;
 		
+		Vec3d pPos = new Vec3d(
+			MC.player.prevX + (MC.player.getX() - MC.player.prevX) * partialTicks - regionX,
+			MC.player.prevY + (MC.player.getY() - MC.player.prevY) * partialTicks,
+			MC.player.prevZ + (MC.player.getZ() - MC.player.prevZ) * partialTicks - regionZ
+		);
+		double cEX =  MC.getCameraEntity().prevX + (MC.getCameraEntity().getX() - MC.getCameraEntity().prevX) * partialTicks - regionX;
+
 		for(ItemEntity e : items)
 		{
 			matrixStack.push();
 			
 			// get last position
-			Vec3d pos = new Vec3d(
+			Vec3d ePos = new Vec3d(
 				e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
 				e.prevY + (e.getY() - e.prevY) * partialTicks,
 				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ
 			);
+			//double ePX = e.prevX;
+			//double eX = e.getX();
+			//pos = e.getPos();
 
-			// face to player
-			Vec2f lookAt = LookAt(e.getPos(), MC.player.getPos());
+			/*Vec3d pPos = new Vec3d(
+				MC.player.prevX + (MC.player.getX() - MC.player.prevX) * partialTicks - regionX,
+				MC.player.prevY + (MC.player.getY() - MC.player.prevY) * partialTicks,
+				MC.player.prevZ + (MC.player.getZ() - MC.player.prevZ) * partialTicks - regionZ
+			);*/
 
-			String name =
-				"Yaw " + String.valueOf(lookAt.y) +
-				", Pitch " + String.valueOf(lookAt.x);
+			//Vec2f lookAt = LookAt(e.getPos(), MC.player.getPos());
+			//Vec2f lookAt = LookAt(pos, MC.player.getPos());
+			Vec2f lookAt = LookAt(ePos, pPos);
+
+			//String name =
+			//	"Yaw " + String.valueOf(lookAt.y) +
+			//	", Pitch " + String.valueOf(lookAt.x);
+
+			String name = e.getName().getString();
+			if(e.hasCustomName())
+				name = e.getCustomName().getString();
+
+			ItemStack eIS = e.getStack();
+			if (eIS.getCount() > 0) {
+				name = String.valueOf(eIS.getCount()) + "x " + e.getName().getString();
+			}
+
+			//BlockPos bPos = e.getBlockPos();
+			//BlockState bState = e.getBlockStateAtPos();
+
 			TextRenderer tr = WurstClient.MC.textRenderer;
-
-			// translate to center
-			//Window sr = MC.getWindow();
 			int msgWidth = MC.textRenderer.getWidth(name);
-			//matrixStack.translate(mStackTr[0] / 2 - msgWidth / 2,
-			//	mStackTr[1], mStackTr[2]);
-
+			int msgHeight = MC.textRenderer.fontHeight;
 			
-			//matrixStack.translate(
-			//	e.prevX + (e.getX() - e.prevX) * partialTicks - regionX,
-			//	e.prevY + (e.getY() - e.prevY) * partialTicks,
-			//	e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ);
-			// set origin pos
-			matrixStack.translate(pos.x, pos.y, pos.z);
-			//matrixStack.translate(mStackTr[0] - (msgWidth / 2), mStackTr[1], mStackTr[2]);
-
+			// set pos
+			Box eBox = e.getBoundingBox();
+			double eHY = eBox.maxY - eBox.minY;
+			//matrixStack.translate(ePos.x, ePos.y, ePos.z);
+			//matrixStack.translate(ePos.x, ePos.y + 1F, ePos.z);
+			matrixStack.translate(ePos.x, ePos.y + eHY, ePos.z);
+			float eH = e.getHeight();
+			double eHO = e.getHeightOffset();
+			
+			//matrixStack.translate(0, e.getHeight(), 0);
+			
 			// flip text over Z
 			matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
-			
+
 			// face to player
-			//Vec3d lookAt = LookAt(e.getPos(), MC.player.getPos());
-			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
 			matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion((float)lookAt.y));
+			matrixStack.multiply(Vec3f.NEGATIVE_X.getDegreesQuaternion((float)lookAt.x));
 
 			// scale text
-			matrixStack.scale(0.04F, 0.04F, 0.04F);
+			matrixStack.scale(0.03F, 0.03F, 0.03F);
 
-			// center text
-			matrixStack.translate(pos.x - (msgWidth / 2), 0, 0);
+			// center text & up by text height
+			//matrixStack.translate(-(msgWidth / 2), 0, 0);
+			matrixStack.translate(-(msgWidth / 2), -(msgHeight * 2), 0);
+			//matrixStack.translate(0, msgHeight, 0);
 
-			double eW = e.getWidth();
-			double eH = e.getHeight();
-			//matrixStack.scale(e.getWidth(), e.getHeight(), e.getWidth());
-
-			float eYaw = e.prevYaw;
-			float ePitch = e.prevPitch;
-			float eD = MC.player.distanceTo(e);
-			float f = MC.player.distanceTo(e) / 20F;//float f = MC.player.distanceTo(e) / 20F;
-			//matrixStack.scale(f, f, f);
-
-			float pBYaw = MC.player.prevBodyYaw;
-			float pHYaw = MC.player.prevHeadYaw;
-			float pYaw = MC.player.prevYaw;
-			float pPitch = MC.player.getPitch();
 			
-			// flip text over Z
-			//matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
-			
-			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(-MC.player.getYaw() + 180));
-			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevYaw));
-
-			// turn to player
-			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.prevHeadYaw));
-			//matrixStack.multiply(Vec3f.POSITIVE_Y.getDegreesQuaternion(MC.player.getHeadYaw()));
-			
-			//Quaternion eQ = new Quaternion(x, y, z, degrees)//Quaternion(axis, rotationAngle, degrees);
-			//matrixStack.multiply(quaternion);
-
-			Matrix4f eM4f = new Matrix4f();
-			//matrixStack.multiplyPositionMatrix(matrix);
-
-			double eRD = e.getRenderDistanceMultiplier();//Entity.getRenderDistanceMultiplier();
-			
-			WurstLogoOtf otf = WurstClient.INSTANCE.getOtfs().wurstLogoOtf;
-			//if(!otf.isVisible())
-			//	return;
-			
-			
-			
-			// draw version background
 			GL11.glEnable(GL11.GL_BLEND);
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
 			//GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
 			
-			float[] color;
-			//if(WurstClient.INSTANCE.getHax().rainbowUiHack.isEnabled())
-			//	color = WurstClient.INSTANCE.getGui().getAcColor();
-			//else
-				color = otf.getBackgroundColor();
+			// draw background
+			float[] colorF = color.getColorF();
+			drawQuads(matrixStack, -1, -1, tr.getWidth(name) + 1, tr.fontHeight + 1, 0, 0, 0, 0.3F);
 			
-			//drawQuads(matrixStack, 0, 6, tr.getWidth(version) + 76, 17, color[0],
-			//	color[1], color[2], 0.5F);
-			
-			// draw version string
+			// draw string
 			//GL11.glEnable(GL11.GL_CULL_FACE);
-			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			//GL11.glDisable(GL11.GL_DEPTH_TEST);
 
-			float angle = 1.0F;
-			//GL11.glRotatef(angle, 0, 0, 1.0F);
-
-			int iColor = otf.getTextColor();
-			tr.draw(matrixStack, name, 0, 0, 0xF0F0F000);
-			
-			// draw Wurst logo
-			RenderSystem.setShaderColor(1, 1, 1, 1);
-			GL11.glEnable(GL11.GL_BLEND);
-			//RenderSystem.setShaderTexture(0, texture);
-			//DrawableHelper.drawTexture(matrixStack, 0, 3, 0, 0, 72, 18, 72, 18);
+			int iColor = color.getColorI();
+			//tr.draw(matrixStack, name, 0, 0, 0xF0F0F078);
+			tr.draw(matrixStack, name, 0, 0, iColor);
 
 			matrixStack.pop();
 		}
@@ -468,8 +448,9 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	//public static void LookAt(double px, double py, double pz , EntityPlayer me)
 	private Vec2f LookAt(Vec3d from , Vec3d to)
 	{
-		BlockPos bPos = new BlockPos(new Vec3d(from.x, from.y, from.z));
-		double length = bPos.getSquaredDistance(new Vec3i(to.x, to.y, to.z));
+		//BlockPos bPos = new BlockPos(new Vec3d(from.getX(), from.getY(), from.getZ()));
+		//BlockPos bPos = new BlockPos(from);
+		//double length = bPos.getSquaredDistance(new Vec3i(to.x, to.y, to.z));
 
 		//net.minecraft.block.BlockState bState = new net.minecraft.block.BlockState();
 		//BlockEntity bEnt = new BlockEntity(net.minecraft.block.entity.BlockEntityType.SIGN, bPos, );
@@ -483,15 +464,22 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		Vec3d dir = to.subtract(from);
 
 		double len = Math.sqrt(dirx*dirx + diry*diry + dirz*dirz);
-		length = dir.horizontalLength();
-		length = dir.horizontalLengthSquared();
-		length = dir.length();
-		length = dir.lengthSquared();
+		double length = dir.length();
+		//length = dir.horizontalLengthSquared();
+		//length = dir.horizontalLength();
+		//length = dir.lengthSquared();
 
 		dirx /= len;
 		diry /= len;
 		dirz /= len;
-		dir.multiply(length);//?? divity
+//		dir.multiply(length);//?? divity
+		//dir.x /= length;
+		//dir.y /= length;
+		//dir.z /= length;
+		//dir = dir / length;
+		//Vec3d lerp = dir.lerp(from, length);
+		//lerp = dir.lerp(to.subtract(from), length);
+		//dir.fromPolar(pitch, yaw);
 
 		double pitch = Math.asin(diry);
 		double yaw = Math.atan2(dirz, dirx);
@@ -501,12 +489,24 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		yaw = yaw * 180.0 / Math.PI;
 
 		yaw += 90f;
-		//me.rotationPitch = (float)pitch;
-		//me.rotationYaw = (float)yaw;
-
-		//return new Vec3d(dirx, diry, dirz);
-		//return new Vec3d(pitch, yaw, 0);
 		return new Vec2f((float)pitch, (float)yaw);
+	}
+
+	private void drawQuads(MatrixStack matrices, int x1, int y1, int x2, int y2,
+		float r, float g, float b, float a)
+	{
+		Matrix4f matrix = matrices.peek().getPositionMatrix();
+		RenderSystem.setShader(GameRenderer::getPositionColorShader);
+		
+		Tessellator tessellator = RenderSystem.renderThreadTesselator();
+		BufferBuilder bufferBuilder = tessellator.getBuffer();
+		bufferBuilder.begin(VertexFormat.DrawMode.QUADS,
+			VertexFormats.POSITION_COLOR);
+		bufferBuilder.vertex(matrix, x1, y2, 0.0F).color(r, g, b, a).next();
+		bufferBuilder.vertex(matrix, x2, y2, 0.0F).color(r, g, b, a).next();
+		bufferBuilder.vertex(matrix, x2, y1, 0.0F).color(r, g, b, a).next();
+		bufferBuilder.vertex(matrix, x1, y1, 0.0F).color(r, g, b, a).next();
+		tessellator.draw();
 	}
 
 	private void etyCustomName(Entity ety, boolean hasCount, int iCount, boolean visible) {
