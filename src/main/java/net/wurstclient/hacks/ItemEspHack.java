@@ -20,6 +20,7 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
+import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -144,8 +145,10 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
 
-		if(names.isChecked())
+		if(names.isChecked()) {
 			showNames(matrixStack, partialTicks, regionX, regionZ);
+			//renderNames(matrixStack, partialTicks, regionX, regionZ);
+		}
 
 		matrixStack.pop();
 		
@@ -243,14 +246,21 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	}
 
 	private void showNames(MatrixStack matrixStack, double partialTicks, int regionX, int regionZ) {
+		// ItemStack stack = e.getStack();
+		// GameRenderer.renderFloatingText(MC.textRenderer,
+		// stack.getCount() + "x "
+		// + stack.getName().asFormattedString(),
+		// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
+		// MC.getEntityRenderManager().cameraPitch, false);
+		// GL11.glDisable(GL11.GL_LIGHTING);
+
 		ArrayList<Entity> entities = new ArrayList<>();
 		entities.addAll(items);
 		entities.addAll(more);
 		if (entities.size() <= 0)
 			return;
 
-		for(Entity e : entities)
-		{
+		for(Entity e : entities) {
 			//
 			String sJson = "{\"text\":\"";
 			String sPat = "x ";
@@ -302,14 +312,6 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	}
 
 	private void renderNames(MatrixStack matrixStack, double partialTicks, int regionX, int regionZ) {
-		// ItemStack stack = e.getStack();
-		// GameRenderer.renderFloatingText(MC.textRenderer,
-		// stack.getCount() + "x "
-		// + stack.getName().asFormattedString(),
-		// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
-		// MC.getEntityRenderManager().cameraPitch, false);
-		// GL11.glDisable(GL11.GL_LIGHTING);
-
 		ArrayList<Entity> entities = new ArrayList<>();
 		entities.addAll(items);
 		entities.addAll(more);
@@ -317,34 +319,28 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			return;
 
 		// get player last position
-		Vec3d pPos = new Vec3d(
+		Vec3d posClient = new Vec3d(
 			MC.player.prevX + (MC.player.getX() - MC.player.prevX) * partialTicks - regionX,
 			MC.player.prevY + (MC.player.getY() - MC.player.prevY) * partialTicks,
 			MC.player.prevZ + (MC.player.getZ() - MC.player.prevZ) * partialTicks - regionZ
 		);
-		double cEX =  MC.getCameraEntity().prevX + (MC.getCameraEntity().getX() - MC.getCameraEntity().prevX) * partialTicks - regionX;
-		//Camera cam = WurstClient.MC.getBlockEntityRenderDispatcher().camera;
-		/*Vec3d pPos = new Vec3d(
+		//double cEX =  MC.getCameraEntity().prevX + (MC.getCameraEntity().getX() - MC.getCameraEntity().prevX) * partialTicks - regionX;
+		/*Camera cam = WurstClient.MC.getBlockEntityRenderDispatcher().camera;
+		Vec3d pPos = new Vec3d(
 			cam.getPos().getX() + cam.getPos().getX() * partialTicks - regionX,
 			cam.getPos().getY() + cam.getPos().getY() * partialTicks,
 			cam.getPos().getZ() + cam.getPos().getZ() * partialTicks - regionZ
-		);
-		Vec3d pPos = new Vec3d(
-			cam.getBlockPos().getX(),
-			cam.getBlockPos().getY(),
-			cam.getBlockPos().getZ()
 		);*/
 
-		//
-		//GL11.glEnable(GL11.GL_BLEND);
-		//GL11.glDisable(GL11.GL_DEPTH_TEST);
-
-
+		// textRenderer
 		TextRenderer tr = MC.textRenderer;
-		tr = MC.getInstance().textRenderer;;
+		//tr = MC.getInstance().textRenderer;
+//		TextureManager tm = MC.getTextureManager();
+//		net.minecraft.client.font.FontManager fm = new net.minecraft.client.font.FontManager(tm);
+//		tr =  fm.createTextRenderer();
+//		net.minecraft.client.font.GlyphRenderer gr;
+		
 		int msgHeight = tr.fontHeight;
-
-		//var immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
 
 		float[] colorF = color.getColorF();
 		int iColor = color.getColorI();
@@ -353,10 +349,8 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 		{
 			matrixStack.push();
 
-			//
-			//GL11.glEnable(GL11.GL_BLEND);
-			//GL11.glEnable(GL11.GL_DEPTH_TEST);
-			//GL11.glDisable(GL11.GL_DEPTH_TEST);
+			GL11.glEnable(GL11.GL_BLEND);
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
 
 			// get entity last position
 			Vec3d ePos = new Vec3d(
@@ -365,7 +359,7 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ
 			);
 
-			Vec2f lookAt = LookAt(ePos, pPos);
+			Vec2f lookAt = LookAt(ePos, posClient);
 
 			String name = e.getName().getString();
 			if(e.hasCustomName())
@@ -385,7 +379,7 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			//matrixStack.translate(ePos.x, ePos.y, ePos.z);
 			//matrixStack.translate(ePos.x, ePos.y + 1F, ePos.z);
 			matrixStack.translate(ePos.x, ePos.y + eHY, ePos.z);
-			
+
 			// flip text over Z
 			matrixStack.multiply(Vec3f.POSITIVE_Z.getDegreesQuaternion(180F));
 
@@ -395,9 +389,10 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 
 			// scale text
 			float scaleFactor = (float) MC.getWindow().getScaleFactor();
-			float newScaleFactor = 2;
+			float newScaleFactor = 1;
 			float scaleCompensation = newScaleFactor / scaleFactor;
-			matrixStack.scale(0.03F, 0.03F, 0.03F);
+			//matrixStack.scale(0.03F, 0.03F, 0.03F);
+			matrixStack.scale(scaleCompensation, scaleCompensation, scaleCompensation);
 
 			//
 			//TextRenderer tr = WurstClient.MC.textRenderer;
@@ -422,22 +417,11 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			tr.draw(name, 0, 0, iColor, false, matrix, immediate, true, iColor, light);*/
 
 			//
-			//GL11.glDisable(GL11.GL_BLEND);
-			//GL11.glEnable(GL11.GL_DEPTH_TEST);
-			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			GL11.glDisable(GL11.GL_BLEND);
+			GL11.glEnable(GL11.GL_DEPTH_TEST);
 
 			matrixStack.pop();
 		}
-
-		//
-		//GL11.glDisable(GL11.GL_BLEND);
-		//GL11.glEnable(GL11.GL_DEPTH_TEST);
-
-		// GL resets
-		//RenderSystem.setShaderColor(1, 1, 1, 1);
-		//GL11.glEnable(GL11.GL_DEPTH_TEST);
-		//GL11.glDisable(GL11.GL_BLEND);
-		//GL11.glDisable(GL11.GL_LINE_SMOOTH);
 	}
 
 	private Vec2f LookAt(Vec3d from , Vec3d to)
