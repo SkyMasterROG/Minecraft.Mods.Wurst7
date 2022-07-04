@@ -7,6 +7,7 @@
  */
 package net.wurstclient.clickgui.screens;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.text.html.parser.Entity;
@@ -23,6 +24,7 @@ import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
+import net.minecraft.client.gui.widget.CheckboxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.math.MatrixStack;
@@ -47,48 +49,65 @@ import net.wurstclient.util.MathUtils;
 public final class EditMobListScreen extends Screen
 {
 	private final Screen prevScreen;
-	private final MobListSetting mobList;
+	private final MobListSetting mobListSet;
 	
 	private ListGui listGui;
 	private TextFieldWidget mobIdField;
 	private ButtonWidget addButton;
 	private ButtonWidget removeButton;
 	private ButtonWidget doneButton;
+
+	//private static final ArrayList<CheckboxWidget> checkBoxList = new ArrayList<CheckboxWidget>();
 	
 	private EntityType<?> entityToAdd;
 	
-	public EditMobListScreen(Screen prevScreen, MobListSetting blockList)
+	public EditMobListScreen(Screen prevScreen, MobListSetting mobListSet)
 	{
 		super(Text.literal(""));
 		this.prevScreen = prevScreen;
-		this.mobList = blockList;
+		this.mobListSet = mobListSet;
 	}
 	
 	@Override
 	public void init()
 	{
-		listGui = new ListGui(client, this, mobList.getMobIDs());
+		//
+		listGui = new ListGui(client, this, mobListSet.getMobIDs());
+		for (CheckboxWidget checkBox : listGui.checkBoxList) {
+			addDrawableChild(checkBox);
+		}
 		
+		//
 		mobIdField = new TextFieldWidget(client.textRenderer,
 			width / 2 - 152, height - 55, 150, 18, Text.literal(""));
 		addSelectableChild(mobIdField);
 		mobIdField.setMaxLength(256);
 		
-		addDrawableChild(addButton = new ButtonWidget(width / 2 - 2,
-			height - 56, 30, 20, Text.literal("Add"), b -> {
-				mobList.add(entityToAdd);
-				mobIdField.setText("");
-			}));
+		addDrawableChild(
+			addButton = new ButtonWidget(width / 2 - 2, height - 56, 30, 20,
+				Text.literal("Add"),
+				b -> {
+					mobListSet.add(entityToAdd);
+					mobIdField.setText("");
+				}
+			)
+		);
 		
-		addDrawableChild(removeButton = new ButtonWidget(width / 2 + 52,
-			height - 56, 100, 20, Text.literal("Remove Selected"),
-			b -> mobList.remove(listGui.selected)));
+		addDrawableChild(
+			removeButton = new ButtonWidget(width / 2 + 52, height - 56, 100, 20,
+				Text.literal("Remove Selected"),
+				b -> {
+					mobListSet.remove(listGui.selected);
+					//remove(child);
+				}
+			)
+		);
 		
 		addDrawableChild(new ButtonWidget(width - 108, 8, 100, 20,
 			Text.literal("Reset to Defaults"),
 			b -> client.setScreen(new ConfirmScreen(b2 -> {
 				if(b2)
-					mobList.resetToDefaults();
+					mobListSet.resetToDefaults();
 				client.setScreen(EditMobListScreen.this);
 			}, Text.literal("Reset to Defaults"),
 				Text.literal("Are you sure?")))));
@@ -174,6 +193,14 @@ public final class EditMobListScreen extends Screen
 		
 		removeButton.active =
 			listGui.selected >= 0 && listGui.selected < listGui.list.size();
+
+		for (CheckboxWidget checkBox : listGui.checkBoxList) {
+			String messageS = checkBox.getMessage().getString();
+			Boolean checked = checkBox.isChecked();
+			if (checked) {
+				messageS.isEmpty();
+			}
+		}
 	}
 	
 	@Override
@@ -183,7 +210,7 @@ public final class EditMobListScreen extends Screen
 		listGui.render(matrixStack, mouseX, mouseY, partialTicks);
 		
 		drawCenteredText(matrixStack, client.textRenderer,
-			mobList.getName() + " (" + listGui.getItemCount() + ")",
+			mobListSet.getName() + " (" + listGui.getItemCount() + ")",
 			width / 2, 12, 0xffffff);
 		
 		matrixStack.push();
@@ -234,6 +261,9 @@ public final class EditMobListScreen extends Screen
 		private final MinecraftClient mc;
 		private final List<String> list;
 		private int selected = -1;
+
+		//private static final CheckboxWidget onoff = new CheckboxWidget(0, 0, 15, 15, Text.literal("entry"), false, false);
+		private final ArrayList<CheckboxWidget> checkBoxList;// = new ArrayList<CheckboxWidget>();
 		
 		public ListGui(MinecraftClient mc, EditMobListScreen screen,
 			List<String> list)
@@ -241,6 +271,20 @@ public final class EditMobListScreen extends Screen
 			super(mc, screen.width, screen.height, 32, screen.height - 64, 30);
 			this.mc = mc;
 			this.list = list;
+
+			//List<String> mobIds = mobList.getMobIDs();
+			this.checkBoxList = new ArrayList<CheckboxWidget>();
+			int x = 0, y = 0, cbW = 20, cbH = 20;
+			for (String entry : list) {
+				CheckboxWidget checkBox = new CheckboxWidget(x, y, cbW, cbH, Text.literal(entry), false, true);
+				y += (cbH + 2);
+				boolean result = checkBoxList.add(checkBox);
+				int index = checkBoxList.indexOf(checkBox);
+				if (result && (index >= 0)) {
+					index = checkBoxList.lastIndexOf(checkBox);
+					//addDrawableChild(checkBoxList.get(index));
+				}
+			}
 		}
 		
 		@Override
@@ -276,8 +320,7 @@ public final class EditMobListScreen extends Screen
 			int y, int var4, int var5, int var6, float partialTicks)
 		{
 			String idStr = list.get(index);
-			//Block block = BlockUtils.getBlockFromName(name);
-			Identifier id =  Identifier.tryParse(idStr);
+			Identifier id = Identifier.tryParse(idStr);
 			EntityType<?> entityType = null;
 			try {
 				entityType = Registry.ENTITY_TYPE.get(id);
@@ -292,12 +335,29 @@ public final class EditMobListScreen extends Screen
 				renderIconAndGetName(matrixStack, entityType, x + 1, y + 1, true);
 
 			fr.draw(matrixStack, displayName, x + 28, y, 0xf0f0f0);
-			fr.draw(matrixStack, idStr, x + 28, y + 9, 0xa0a0a0);
+			fr.draw(matrixStack, "TK: " + entityType.getTranslationKey(), x + 28, y + 9, 0xa0a0a0);
 
-			fr.draw(matrixStack,
-				//"ID: " + Block.getRawIdFromState(block.getDefaultState()),
-				"ID: " + idStr,
-				x + 28, y + 18, 0xa0a0a0);
+			//fr.draw(matrixStack, "ID: " + Block.getRawIdFromState(block.getDefaultState()), x + 28, y + 18, 0xa0a0a0);
+			fr.draw(matrixStack, "ID: " + idStr, x + 28, y + 18, 0xa0a0a0);
+			Identifier lTId = entityType.getLootTableId();
+
+			if (index >= checkBoxList.size()) {
+				return;
+			}
+			CheckboxWidget checkBox = checkBoxList.get(index);
+			if (null == checkBox) {
+				return;
+			}
+			checkBox.x = x - checkBox.getWidth() - 10;
+			checkBox.y = y + ((this.itemHeight - checkBox.getHeight()) / 2);
+
+			checkBox.visible = true;
+			if ((y + this.itemHeight) > this.bottom) {
+				checkBox.visible = false;
+			} else if ((y) <= this.top) {
+				checkBox.visible = false;
+			}
+			
 		}
 
 		private String renderIconAndGetName(MatrixStack matrixStack,

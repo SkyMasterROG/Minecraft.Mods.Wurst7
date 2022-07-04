@@ -20,7 +20,6 @@ import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
-import net.minecraft.client.texture.TextureManager;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -246,14 +245,6 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 	}
 
 	private void showNames(MatrixStack matrixStack, double partialTicks, int regionX, int regionZ) {
-		// ItemStack stack = e.getStack();
-		// GameRenderer.renderFloatingText(MC.textRenderer,
-		// stack.getCount() + "x "
-		// + stack.getName().asFormattedString(),
-		// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
-		// MC.getEntityRenderManager().cameraPitch, false);
-		// GL11.glDisable(GL11.GL_LIGHTING);
-
 		ArrayList<Entity> entities = new ArrayList<>();
 		entities.addAll(items);
 		entities.addAll(more);
@@ -267,21 +258,29 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 
 			// get current name
 			String name = e.getName().getString();
-			Text text = e.getDisplayName();
+			Text eDN = e.getDisplayName();
+			String nameC = eDN.getString();
 			if(e.hasCustomName()) {
 				//name = e.getCustomName().getString();
-				String nameC = e.getCustomName().getString();
+				nameC = e.getCustomName().getString();
 			}
+			/*EntityType<?> et = e.getType();
+			nameC = et.getName().getString();
+			nameC = et.getTranslationKey();
+			nameC = et.getUntranslatedName();
+			nameC = e.getEntityName();
+			int eId = e.getId();
+			net.minecraft.util.Identifier id =  e.getType().getLootTableId();*/
 
 			// has and get count
 			boolean hasCount = false;
 			int countI = 0;
 			if (e.getType() == EntityType.ITEM) {
-				countI = ((ItemEntity)(e)).getStack().getCount();
+				countI = ((ItemEntity)e).getStack().getCount();
 				hasCount = countI >= 1;
 
 			} else if (e.getType() == EntityType.EXPERIENCE_ORB) {
-				countI = ((ExperienceOrbEntity)(e)).getExperienceAmount();
+				countI = ((ExperienceOrbEntity)e).getExperienceAmount();
 				hasCount = countI >= 1;
 			}
 
@@ -308,10 +307,19 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			if(!e.isCustomNameVisible()) {
 				e.setCustomNameVisible(true);
 			}
-		};
+		}
 	}
 
 	private void renderNames(MatrixStack matrixStack, double partialTicks, int regionX, int regionZ) {
+		// ItemStack stack = e.getStack();
+		// GameRenderer.renderFloatingText(MC.textRenderer,
+		// stack.getCount() + "x "
+		// + stack.getName().asFormattedString(),
+		// 0, 1, 0, 0, MC.getEntityRenderManager().cameraYaw,
+		// MC.getEntityRenderManager().cameraPitch, false);
+		// GL11.glDisable(GL11.GL_LIGHTING);
+
+		//
 		ArrayList<Entity> entities = new ArrayList<>();
 		entities.addAll(items);
 		entities.addAll(more);
@@ -325,12 +333,6 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			MC.player.prevZ + (MC.player.getZ() - MC.player.prevZ) * partialTicks - regionZ
 		);
 		//double cEX =  MC.getCameraEntity().prevX + (MC.getCameraEntity().getX() - MC.getCameraEntity().prevX) * partialTicks - regionX;
-		/*Camera cam = WurstClient.MC.getBlockEntityRenderDispatcher().camera;
-		Vec3d pPos = new Vec3d(
-			cam.getPos().getX() + cam.getPos().getX() * partialTicks - regionX,
-			cam.getPos().getY() + cam.getPos().getY() * partialTicks,
-			cam.getPos().getZ() + cam.getPos().getZ() * partialTicks - regionZ
-		);*/
 
 		// textRenderer
 		TextRenderer tr = MC.textRenderer;
@@ -375,9 +377,7 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			Box eBox = e.getBoundingBox();
 			double eHY = eBox.maxY - eBox.minY;
 			float eH = e.getHeight();
-			//double eHO = e.getHeightOffset();
 			//matrixStack.translate(ePos.x, ePos.y, ePos.z);
-			//matrixStack.translate(ePos.x, ePos.y + 1F, ePos.z);
 			matrixStack.translate(ePos.x, ePos.y + eHY, ePos.z);
 
 			// flip text over Z
@@ -411,10 +411,6 @@ public final class ItemEspHack extends Hack implements UpdateListener,
 			
 			// draw string
 			tr.drawWithShadow(matrixStack, name, 0, 0, iColor);
-			/*immediate = VertexConsumerProvider.immediate(Tessellator.getInstance().getBuffer());
-			Matrix4f matrix = matrixStack.peek().getPositionMatrix();
-			int light = LightmapTextureManager.pack(15, 15);
-			tr.draw(name, 0, 0, iColor, false, matrix, immediate, true, iColor, light);*/
 
 			//
 			GL11.glDisable(GL11.GL_BLEND);

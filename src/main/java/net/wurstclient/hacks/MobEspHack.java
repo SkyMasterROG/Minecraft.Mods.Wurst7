@@ -25,7 +25,9 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
@@ -75,7 +77,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		"minecraft:zombie_villager", "minecraft:warden", "minecraft:bee",
 		"minecraft:squid", "minecraft:wither_skeleton", "minecraft:shulker", "minecraft:slime", "minecraft:wolf", "minecraft:axolotl");
 
-	private final CheckboxSetting showMobsNames = new CheckboxSetting(
+	private final CheckboxSetting names = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
 
 	private final ArrayList<MobEntity> mobs = new ArrayList<>();
@@ -92,7 +94,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		addSetting(filterMobs);
 		addSetting(onlyMob);
 		addSetting(onlyMob_0);
-//		addSetting(showMobsNames);
+		addSetting(names);
 	}
 	
 	@Override
@@ -217,8 +219,8 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		if(style.getSelected().lines)
 			renderTracers(matrixStack, partialTicks, regionX, regionZ);
 
-		if(showMobsNames.isChecked())
-			renderNames(partialTicks);
+		//if(names.isChecked())
+			showNames(partialTicks);
 		
 		matrixStack.pop();
 		
@@ -302,60 +304,17 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		
 	}
 
-	private void renderNames(double partialTicks) {// throws net.wurstclient.command.CmdSyntaxError
-		for(MobEntity mob : mobs) {
-			net.minecraft.item.ItemStack stack;
-			boolean isValid;
-			net.minecraft.item.Item.Settings setts;
-			setts = new net.minecraft.item.Item.Settings();
-			net.minecraft.item.TridentItem trident = new net.minecraft.item.TridentItem(setts);
-			String sId = "trident";
-			net.minecraft.item.Item mcItem = null;
+	private void showNames(double partialTicks) {
+		ArrayList<Entity> entities = new ArrayList<>();
+		entities.addAll(mobs);
+		if (entities.size() <= 0)
+			return;
 
-			try {
-				mcItem = net.minecraft.util.registry.Registry.ITEM.get(new net.minecraft.util.Identifier(sId));
-			}catch(net.minecraft.util.InvalidIdentifierException e) {
-				/*throw */new net.wurstclient.command.CmdSyntaxError("Invalid item: " + sId);
+		for(Entity e : entities) {
+			// set name to visible state
+			if(e.isCustomNameVisible() != names.isChecked()) {
+				e.setCustomNameVisible(names.isChecked());
 			}
-			
-
-			if((onlyMob.getSelected().getDescription() != null) && (!onlyMob.getSelected().getDescription().isEmpty())) {
-				String sAry[] = onlyMob.getSelected().toString().split(",");
-				if(sAry.length >= 2) {
-					//MobEntity mEty;
-					//mEty.getActiveHand().MAIN_HAND.
-					//java.lang.Iterable<net.minecraft.item.ItemStack> stacks = mEty.getItemsEquipped();
-					//stacks = mEty.getItemsHand();
-					//mEty.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);
-					//ArrayList<net.minecraft.item.Item> mcItems = new ArrayList<>();
-					//MobEntity.canEquipmentSlotContain(net.minecraft.entity.EquipmentSlot.MAINHAND, net.minecraft.item.ItemStack);
-					//net.minecraft.item.Item mcItem = mEty.getEquipmentForSlot(net.minecraft.entity.EquipmentSlot.MAINHAND, 0);
-
-					isValid = mob.toString().contains(sAry[0]);
-					isValid = mob.isUsingItem();
-					isValid = mob.isHolding(trident);
-					if(mcItem != null)
-						isValid = mob.isHolding(mcItem);
-
-					if(mob.getActiveItem() != null)
-						isValid = mob.getActiveItem().getItem() instanceof net.minecraft.item.TridentItem;
-					
-					stack = mob.getEquippedStack(net.minecraft.entity.EquipmentSlot.MAINHAND);//"1 trident"
-					isValid = mob.isHolding(stack.getItem());
-					isValid = stack.getItem() instanceof net.minecraft.item.TridentItem;
-					stack = mob.getEquippedStack(net.minecraft.entity.EquipmentSlot.OFFHAND);//"1 nautilus_shell"
-					isValid = mob.isHolding(stack.getItem());
-					isValid = stack.getItem() instanceof net.minecraft.item.TridentItem;
-
-					isValid = mob.hasStackEquipped(net.minecraft.entity.EquipmentSlot.MAINHAND);
-					isValid = mob.hasStackEquipped(net.minecraft.entity.EquipmentSlot.OFFHAND);
-					isValid = isValid ? true : false;
-					//stream = stream.filter(e -> e.toString().contains(sAry[0])).filter(e -> e.isUsingItem()).filter(e -> e.isHolding(trident));
-				}
-			}
-
-			if(trident != null)
-				trident.isDamageable();
 		}
 	}
 	
@@ -407,6 +366,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 	private enum OnlyMob_ {
 		drowned("Drowned", "Trident", net.minecraft.entity.EntityType.DROWNED, net.minecraft.item.Items.TRIDENT),
+		allay("Allay", net.minecraft.entity.EntityType.ALLAY),
 		axolotl("Axolotl", net.minecraft.entity.EntityType.AXOLOTL),
 		bee("Bee", net.minecraft.entity.EntityType.BEE),
 		enderman("Enderman", net.minecraft.entity.EntityType.ENDERMAN),
