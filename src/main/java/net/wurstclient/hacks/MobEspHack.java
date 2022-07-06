@@ -73,7 +73,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	private final EnumSetting<OnlyMob_> onlyMob =
 		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
 	// https://minecraft.fandom.com/wiki/Category:Entities
-	private final MobListSetting onlyMob_0 = new MobListSetting("Mob List", "",
+	private final MobListSetting onlyMob_0 = new MobListSetting("onlyList", "",
 		"minecraft:zombie_villager", "minecraft:warden", "minecraft:bee",
 		"minecraft:squid", "minecraft:wither_skeleton", "minecraft:shulker", "minecraft:slime", "minecraft:wolf", "minecraft:axolotl");
 

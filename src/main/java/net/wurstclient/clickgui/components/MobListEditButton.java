@@ -31,22 +31,27 @@ public final class MobListEditButton extends Component
 {
 	private final MobListSetting setting;
 	private int buttonWidth;
+
+	private String buttonString;
+	private TextRenderer fr;// = WurstClient.MC.textRenderer;
 	
 	public MobListEditButton(MobListSetting setting)
 	{
 		this.setting = setting;
 		
-		TextRenderer fr = WurstClient.MC.textRenderer;
-		buttonWidth = fr.getWidth("Edit...");
+		this.buttonString = "Edit...";
+
+		this.fr = WurstClient.MC.textRenderer;
+		buttonWidth = fr.getWidth(buttonString);
 		
 		setWidth(getDefaultWidth());
 		setHeight(getDefaultHeight());
 	}
 	
 	@Override
-	public void handleMouseClick(double mouseX, double mouseY, int mouseButton)
+	public void handleMouseClick(double mouseX, double mouseY, int button)
 	{
-		if(mouseButton != 0)
+		if(button != 0)
 			return;
 		
 		if(mouseX < getX() + getWidth() - buttonWidth - 4)
@@ -122,19 +127,26 @@ public final class MobListEditButton extends Component
 		
 		// setting name
 		RenderSystem.setShaderColor(1, 1, 1, 1);
-		TextRenderer fr = WurstClient.MC.textRenderer;
-		String text = setting.getName() + ": " + setting.getMobIDs().size();
-		fr.draw(matrixStack, text, x1, y1 + 2, txtColor);
-		fr.draw(matrixStack, "Edit...", x3 + 2, y1 + 2, txtColor);
+		//TextRenderer fr = WurstClient.MC.textRenderer;
+		//String text = setting.getName() + ": " + setting.getMobIDs().size();
+		fr.draw(matrixStack, getSettingName(), x1, y1 + 2, txtColor);
+		fr.draw(matrixStack, buttonString, x3 + 2, y1 + 2, txtColor);
 		GL11.glEnable(GL11.GL_BLEND);
+	}
+
+	private String getSettingName() {
+		String name = setting.getName() + ": " + setting.getMobIDs().size();
+		name = name + " (" + setting.getMobMap().size() + ")";
+
+		return name;
 	}
 	
 	@Override
 	public int getDefaultWidth()
 	{
-		TextRenderer fr = WurstClient.MC.textRenderer;
-		String text = setting.getName() + ": " + setting.getMobIDs().size();
-		return fr.getWidth(text) + buttonWidth + 6;
+		//TextRenderer fr = WurstClient.MC.textRenderer;
+		//String text = setting.getName() + ": " + setting.getMobIDs().size();
+		return fr.getWidth(getSettingName()) + buttonWidth + 6;
 	}
 	
 	@Override

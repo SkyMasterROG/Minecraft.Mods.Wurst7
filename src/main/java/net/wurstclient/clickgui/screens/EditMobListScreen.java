@@ -14,15 +14,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.swing.text.html.parser.Entity;
-
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 
-//import net.minecraft.block.Block;
-//import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.screen.ConfirmScreen;
@@ -32,27 +28,16 @@ import net.minecraft.client.gui.widget.CheckboxWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.util.math.Rect2i;
-import net.minecraft.command.EntityDataObject;
-import net.minecraft.datafixer.fix.EntityIdFix;
-import net.minecraft.entity.EntityStatuses;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.world.StructureSpawns.BoundingBox;
-//import net.wurstclient.settings.BlockListSetting;
 import net.wurstclient.settings.MobListSetting;
-//import net.wurstclient.util.BlockUtils;
 import net.wurstclient.util.ListWidget;
-import net.wurstclient.util.MathUtils;
 
 public final class EditMobListScreen extends Screen
 {
@@ -80,26 +65,33 @@ public final class EditMobListScreen extends Screen
 	public void init()
 	{
 		//
-		listGui = new ListGui(client, this, mobListSet.getMobIDs());
+//		listGui = new ListGui(client, this, mobListSet.getMobIDs());
+		listGui = new ListGui(client, this, mobListSet.getMobMap());
 
 		//
-		mobIdField = new TextFieldWidget(client.textRenderer,
-			width / 2 - 152, height - 55, 150, 18, Text.literal(""));
+		mobIdField = new TextFieldWidget(
+			client.textRenderer,
+			width / 2 - 152, height - 55, 150, 18,
+			Text.literal("")
+		);
 		addSelectableChild(mobIdField);
 		mobIdField.setMaxLength(256);
 		
 		addDrawableChild(
-			addButton = new ButtonWidget(width / 2 - 2, height - 56, 30, 20,
+			addButton = new ButtonWidget(
+				width / 2 - 2, height - 56, 30, 20,
 				Text.literal("Add"),
 				b -> {
-					mobListSet.add(entityToAdd);
+					//mobListSet.add(entityToAdd);
+					mobListSet.put(entityToAdd, false, null);
 					mobIdField.setText("");
 				}
 			)
 		);
 		
 		addDrawableChild(
-			removeButton = new ButtonWidget(width / 2 + 52, height - 56, 100, 20,
+			removeButton = new ButtonWidget(
+				width / 2 + 52, height - 56, 100, 20,
 				Text.literal("Remove Selected"),
 				b -> {
 					mobListSet.remove(listGui.selected);
@@ -108,27 +100,40 @@ public final class EditMobListScreen extends Screen
 			)
 		);
 		
-		addDrawableChild(new ButtonWidget(width - 108, 8, 100, 20,
-			Text.literal("Reset to Defaults"),
-			b -> client.setScreen(new ConfirmScreen(b2 -> {
-				if(b2)
-					mobListSet.resetToDefaults();
-				client.setScreen(EditMobListScreen.this);
-			}, Text.literal("Reset to Defaults"),
-				Text.literal("Are you sure?")))));
+		addDrawableChild(
+			new ButtonWidget(
+				width - 108, 8, 100, 20,
+				Text.literal("Reset to Defaults"),
+				b -> client.setScreen(
+					new ConfirmScreen(
+						b2 -> {
+							if(b2)
+								mobListSet.resetToDefaults();
+							client.setScreen(EditMobListScreen.this);
+						},
+						Text.literal("Reset to Defaults"),
+						Text.literal("Are you sure?")
+					)
+				)
+			)
+		);
 		
 		addDrawableChild(
-			doneButton = new ButtonWidget(width / 2 - 100, height - 28, 200, 20,
-				Text.literal("Done"), b -> client.setScreen(prevScreen)));
+			doneButton = new ButtonWidget(
+				width / 2 - 100, height - 28, 200, 20,
+				Text.literal("Done"),
+				b -> client.setScreen(prevScreen)
+			)
+		);
 	}
 	
 	@Override
-	public boolean mouseClicked(double mouseX, double mouseY, int mouseButton)
+	public boolean mouseClicked(double mouseX, double mouseY, int button)
 	{
-		boolean childClicked = super.mouseClicked(mouseX, mouseY, mouseButton);
+		boolean childClicked = super.mouseClicked(mouseX, mouseY, button);
 		
-		mobIdField.mouseClicked(mouseX, mouseY, mouseButton);
-		listGui.mouseClicked(mouseX, mouseY, mouseButton);
+		mobIdField.mouseClicked(mouseX, mouseY, button);
+		listGui.mouseClicked(mouseX, mouseY, button);
 		
 		if(!childClicked && (mouseX < (width - 220) / 2
 			|| mouseX > width / 2 + 129 || mouseY < 32 || mouseY > height - 64))
@@ -138,31 +143,30 @@ public final class EditMobListScreen extends Screen
 	}
 	
 	@Override
-	public boolean mouseDragged(double double_1, double double_2, int int_1,
-		double double_3, double double_4)
+	public boolean mouseDragged(double mouseX, double mouseY, int button,
+		double deltaX, double deltaY)
 	{
-		listGui.mouseDragged(double_1, double_2, int_1, double_3, double_4);
-		return super.mouseDragged(double_1, double_2, int_1, double_3,
-			double_4);
+		listGui.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+		return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
 	}
 	
 	@Override
-	public boolean mouseReleased(double double_1, double double_2, int int_1)
+	public boolean mouseReleased(double mouseX, double mouseY, int button)
 	{
-		listGui.mouseReleased(double_1, double_2, int_1);
-		return super.mouseReleased(double_1, double_2, int_1);
+		listGui.mouseReleased(mouseX, mouseY, button);
+		return super.mouseReleased(mouseX, mouseY, button);
 	}
 	
 	@Override
-	public boolean mouseScrolled(double double_1, double double_2,
-		double double_3)
+	public boolean mouseScrolled(double mouseX, double mouseY,
+		double amount)
 	{
-		listGui.mouseScrolled(double_1, double_2, double_3);
-		return super.mouseScrolled(double_1, double_2, double_3);
+		listGui.mouseScrolled(mouseX, mouseY, amount);
+		return super.mouseScrolled(mouseX, mouseY, amount);
 	}
 	
 	@Override
-	public boolean keyPressed(int keyCode, int scanCode, int int_3)
+	public boolean keyPressed(int keyCode, int scanCode, int modifiers)
 	{
 		switch(keyCode)
 		{
@@ -184,7 +188,7 @@ public final class EditMobListScreen extends Screen
 			break;
 		}
 		
-		return super.keyPressed(keyCode, scanCode, int_3);
+		return super.keyPressed(keyCode, scanCode, modifiers);
 	}
 	
 	@Override
@@ -263,14 +267,31 @@ public final class EditMobListScreen extends Screen
 
 		private HashMap<String, CheckboxWidget> checkBoxMap;
 		private Rectangle checkBoxRect;
+
+		private final Map<String, ArrayList<String>> map;
 		
-		public ListGui(MinecraftClient mc, EditMobListScreen screen,
-			List<String> list)
+		public ListGui(MinecraftClient mc, EditMobListScreen screen, List<String> list)
 		{
 			super(mc, screen.width, screen.height, 32, screen.height - 64, 30);
 			this.mc = mc;
 			this.list = list;
 
+			this.map = null;
+
+			//
+			checkBoxMap = new HashMap<>();
+			this.checkBoxRect = new Rectangle(0, 0, 20, 20);
+		}
+
+		public ListGui(MinecraftClient mc, EditMobListScreen screen, Map<String, ArrayList<String>> map)
+		{
+			super(mc, screen.width, screen.height, 32, screen.height - 64, 30);
+			this.mc = mc;
+			this.list = new ArrayList<>(map.keySet());
+
+			this.map = map;
+
+			//
 			checkBoxMap = new HashMap<>();
 			this.checkBoxRect = new Rectangle(0, 0, 20, 20);
 		}
@@ -282,8 +303,7 @@ public final class EditMobListScreen extends Screen
 		}
 		
 		@Override
-		protected boolean selectItem(int index, int int_2, double var3,
-			double var4)
+		protected boolean selectItem(int index, int button, double mouseX, double mouseY)
 		{
 			if(index >= 0 && index < list.size())
 				selected = index;
@@ -306,10 +326,9 @@ public final class EditMobListScreen extends Screen
 				int index = getCheckboxAtPosition(mouseX, mouseY);
 				if (index >= 0) {
 					String listEntry = list.get(index);
-					//CheckboxWidget checkBoxWid = checkBoxMap.get(listEntry);
 
-					checkBoxMap.get(listEntry).onClick(mouseX, mouseY);
-					//checkBoxMap.get(listEntry).mouseClicked(mouseX, mouseY, button);//checkBoxMap.get(listEntry).onPress();
+//					checkBoxMap.get(listEntry).onClick(mouseX, mouseY);
+					checkBoxMap.get(listEntry).mouseClicked(mouseX, mouseY, button);//checkBoxMap.get(listEntry).onPress();
 					//checkBoxMap.get(listEntry).mouseReleased(mouseX, mouseY, button);//checkBoxMap.get(listEntry).onRelease(mouseX, mouseY);
 
 					/*boolean isChecked = false;
@@ -324,9 +343,25 @@ public final class EditMobListScreen extends Screen
 		}
 
 		@Override
+		public boolean mouseReleased(double mouseX, double mouseY, int button)
+		{
+			super.mouseReleased(mouseX, mouseY, button);
+
+			if (0 == button) {
+				int index = getCheckboxAtPosition(mouseX, mouseY);
+				if (index >= 0) {
+					String listEntry = list.get(index);
+					checkBoxMap.get(listEntry).mouseReleased(mouseX, mouseY, button);
+				}
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void renderBackground()
 		{
-			
+
 		}
 
 		@Override
@@ -336,12 +371,16 @@ public final class EditMobListScreen extends Screen
 			String listEntry = list.get(index);
 
 			//
-			Identifier id = Identifier.tryParse(listEntry);
 			EntityType<?> entityType = null;
-			try {
-				entityType = Registry.ENTITY_TYPE.get(id);
-			} catch(InvalidIdentifierException e) {
-				entityType = Registry.ENTITY_TYPE.get(0);
+			try
+			{
+				Identifier id = Identifier.tryParse(listEntry);
+				if (Registry.ENTITY_TYPE.containsId(id))
+					entityType = Registry.ENTITY_TYPE.get(id);
+			}
+			catch(InvalidIdentifierException e)
+			{
+				//e.printStackTrace();//entityType = Registry.ENTITY_TYPE.get(0);
 			}
 
 			// render Icon and Name 
@@ -350,8 +389,8 @@ public final class EditMobListScreen extends Screen
 				renderIconAndGetName(matrixStack, entityType, x + 1, y + 1, true);
 
 			fr.draw(matrixStack, displayName, x + 28, y, 0xf0f0f0);
-			fr.draw(matrixStack, "TK: " + entityType.getTranslationKey(), x + 28, y + 9, 0xa0a0a0);
-			fr.draw(matrixStack, "ID: " + listEntry, x + 28, y + 18, 0xa0a0a0);
+			fr.draw(matrixStack, "ID: " + listEntry, x + 28, y + 9, 0xa0a0a0);//fr.draw(matrixStack, "TK: " + entityType.getTranslationKey(), x + 28, y + 9, 0xa0a0a0);
+			fr.draw(matrixStack, "Item: " + "WIP", x + 28, y + 18, 0xa0a0a0);
 
 			Identifier lTId = entityType.getLootTableId();
 
@@ -365,11 +404,28 @@ public final class EditMobListScreen extends Screen
 			rect.y = y + ((this.itemHeight - rect.height) / 2);
 
 			if (checkBoxMap.isEmpty() || !checkBoxMap.containsKey(listEntry)) {
-				checkBoxMap.put(listEntry,
+				boolean showMessage = false;
+				boolean isChecked = false;
+				try
+				{
+					showMessage = map.get(listEntry).get(0) != listEntry;
+
+					isChecked = Integer.parseInt(
+						map.get(listEntry).get(1),
+						10
+					) > 0;
+				}
+				catch (NullPointerException | NumberFormatException | IndexOutOfBoundsException e)
+				{
+					//e.printStackTrace();
+				}
+
+				checkBoxMap.put(
+					listEntry,
 					new CheckboxWidget(
 						rect.x, rect.y, rect.width, rect.height,
 						Text.literal(listEntry),
-						false, true
+						isChecked, showMessage
 					)
 				);
 			}
@@ -378,8 +434,7 @@ public final class EditMobListScreen extends Screen
 			if (checked) {
 				checked = false;
 			}
-			//CheckboxWidget checkBoxWid = checkBoxMap.get(listEntry);
-			
+
 //			if (!Registry.ENTITY_TYPE.containsId(id)) {
 //				checkBoxWid.visible = false;
 //			}
@@ -393,22 +448,30 @@ public final class EditMobListScreen extends Screen
 			checkBoxMap.get(listEntry).render(matrixStack, mouseX, mouseY, partialTicks);//checkBoxWid.render(matrixStack, mouseX, mouseY, partialTicks);
 		}
 
+		@Override
+		public int getItemAtPosition(double mouseX, double mouseY)
+		{
+			return super.getItemAtPosition(mouseX, mouseY);
+		}
+
 		private String renderIconAndGetName(MatrixStack matrixStack,
 			EntityType<?> entityType, int x, int y, boolean large)
 		{
+			MatrixStack modelViewStack = RenderSystem.getModelViewStack();
+			modelViewStack.push();
+			modelViewStack.translate(x, y, 0);
+			if(large)
+				modelViewStack.scale(1.5F, 1.5F, 1.5F);
+			else
+				modelViewStack.scale(0.75F, 0.75F, 0.75F);
+			
+			DiffuseLighting.enableGuiDepthLighting();
+
+			Item item = Registry.ITEM.get(Identifier.tryParse("minecraft:player_head"));
+
 			if(null == entityType)
 			{
-				MatrixStack modelViewStack = RenderSystem.getModelViewStack();
-				modelViewStack.push();
-				modelViewStack.translate(x, y, 0);
-				if(large)
-					modelViewStack.scale(1.5F, 1.5F, 1.5F);
-				else
-					modelViewStack.scale(0.75F, 0.75F, 0.75F);
-				
-				DiffuseLighting.enableGuiDepthLighting();
-
-				Item item = Registry.ITEM.get(Identifier.tryParse("minecraft:player_head"));
+				//Item item = Registry.ITEM.get(Identifier.tryParse("minecraft:player_head"));
 				mc.getItemRenderer().renderInGuiWithOverrides(
 					item.getDefaultStack(), 0, 0);
 
@@ -427,22 +490,17 @@ public final class EditMobListScreen extends Screen
 				GL11.glEnable(GL11.GL_DEPTH_TEST);
 				matrixStack.pop();
 				
-				return "\u00a7ounknown block\u00a7r";
+				return "\u00a7ounknown mob\u00a7r";
 			}
 
-			MatrixStack modelViewStack = RenderSystem.getModelViewStack();
-			modelViewStack.push();
-			modelViewStack.translate(x, y, 0);
-			if(large)
-				modelViewStack.scale(1.5F, 1.5F, 1.5F);
-			else
-				modelViewStack.scale(0.75F, 0.75F, 0.75F);
-			
-			DiffuseLighting.enableGuiDepthLighting();
-
-			Identifier idET = EntityType.getId(entityType);
+			Identifier idET = Registry.ENTITY_TYPE.getId(entityType);//EntityType.getId(entityType);
 			Identifier idItem = Identifier.tryParse(idET.toString() + "_spawn_egg");
-			Item item = Registry.ITEM.get(idItem);
+
+			item = Registry.ITEM.get(Identifier.tryParse("minecraft:egg"));
+			if (Registry.ITEM.containsId(idItem)) {
+				item = Registry.ITEM.get(idItem);
+			}
+
 			mc.getItemRenderer().renderInGuiWithOverrides(
 				item.getDefaultStack(), 0, 0);
 
