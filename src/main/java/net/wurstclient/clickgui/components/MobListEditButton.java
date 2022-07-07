@@ -135,8 +135,8 @@ public final class MobListEditButton extends Component
 	}
 
 	private String getSettingName() {
-		String name = setting.getName() + ": " + setting.getMobIDs().size();
-		name = name + " (" + setting.getMobMap().size() + ")";
+		String name = setting.getName() + ": " + setting.getMobValues().size();
+		//name = name + " (" + setting.getMobMap().size() + ")";
 
 		return name;
 	}

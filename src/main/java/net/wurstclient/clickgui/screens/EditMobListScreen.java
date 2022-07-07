@@ -8,11 +8,10 @@
 package net.wurstclient.clickgui.screens;
 
 import java.awt.Rectangle;
-
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
@@ -29,7 +28,6 @@ import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.render.DiffuseLighting;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.EntityType;
-import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -50,7 +48,9 @@ public final class EditMobListScreen extends Screen
 	private ButtonWidget removeButton;
 	private ButtonWidget doneButton;
 
-	//private static final ArrayList<CheckboxWidget> checkBoxList = new ArrayList<CheckboxWidget>();
+	//private static CheckboxWidget checkboxPlaceholder;
+	private static ButtonWidget buttonPlaceholder;
+	private static MobListSetting.MobValue mobValuePlaceholder;
 	
 	private EntityType<?> entityToAdd;
 	
@@ -60,13 +60,31 @@ public final class EditMobListScreen extends Screen
 		this.prevScreen = prevScreen;
 		this.mobListSet = mobListSet;
 	}
+
+	/*private static void setValue(int index, MobListSetting.MobValue value)
+	{
+		mobListSet.set(index, value);
+	}*/
 	
 	@Override
 	public void init()
 	{
 		//
-//		listGui = new ListGui(client, this, mobListSet.getMobIDs());
-		listGui = new ListGui(client, this, mobListSet.getMobMap());
+		listGui = new ListGui(client, this, mobListSet.getMobValues());
+		Rectangle cbR = listGui.checkBoxRect;
+		try {
+			Arrays.stream(listGui.list.toArray()).parallel()
+				.map(e -> new CheckboxWidget(
+					cbR.x, cbR.y, cbR.width, cbR.height,
+					Text.literal(e.toString()),
+					((MobListSetting.MobValue)e).isEnabled(), true
+				))
+				.filter(Objects::nonNull)
+				.forEachOrdered(e -> listGui.checkBoxList.add(e));
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		//
 		mobIdField = new TextFieldWidget(
@@ -82,8 +100,14 @@ public final class EditMobListScreen extends Screen
 				width / 2 - 2, height - 56, 30, 20,
 				Text.literal("Add"),
 				b -> {
-					//mobListSet.add(entityToAdd);
-					mobListSet.put(entityToAdd, false, null);
+					MobListSetting.MobValue value = mobListSet.add(entityToAdd);
+					listGui.checkBoxList.add(
+						new CheckboxWidget(
+							cbR.x, cbR.y, cbR.width, cbR.height,
+							Text.literal(value.toString()),
+							value.isEnabled(), true
+						)
+					);
 					mobIdField.setText("");
 				}
 			)
@@ -95,10 +119,24 @@ public final class EditMobListScreen extends Screen
 				Text.literal("Remove Selected"),
 				b -> {
 					mobListSet.remove(listGui.selected);
+					listGui.checkBoxList.remove(listGui.selected);
 					//remove(child);
 				}
 			)
 		);
+
+		// https://maven.fabricmc.net/docs/yarn-1.16.5+build.2/net/minecraft/client/gui/widget/package-summary.html
+		addDrawableChild(
+			buttonPlaceholder = new ButtonWidget(
+				cbR.x, cbR.y, cbR.width, cbR.height,
+				Text.literal("placeholder"),
+				b -> {
+					mobListSet.set(listGui.selected, mobValuePlaceholder);
+					//listGui.checkBoxList.remove(listGui.selected);
+				}
+			)
+		);
+		buttonPlaceholder.visible = false;
 		
 		addDrawableChild(
 			new ButtonWidget(
@@ -107,8 +145,19 @@ public final class EditMobListScreen extends Screen
 				b -> client.setScreen(
 					new ConfirmScreen(
 						b2 -> {
-							if(b2)
+							if(b2) {
 								mobListSet.resetToDefaults();
+
+								listGui.checkBoxList.clear();
+								Arrays.stream(listGui.list.toArray()).parallel()
+									.map(e -> new CheckboxWidget(
+										cbR.x, cbR.y, cbR.width, cbR.height,
+										Text.literal(e.toString()),
+										((MobListSetting.MobValue)e).isEnabled(), true
+									))
+									.filter(Objects::nonNull)
+									.forEachOrdered(e -> listGui.checkBoxList.add(e));
+							}
 							client.setScreen(EditMobListScreen.this);
 						},
 						Text.literal("Reset to Defaults"),
@@ -262,38 +311,36 @@ public final class EditMobListScreen extends Screen
 	private static class ListGui extends ListWidget
 	{
 		private final MinecraftClient mc;
-		private final List<String> list;
+		private final List<MobListSetting.MobValue> list;
 		private int selected = -1;
 
-		private HashMap<String, CheckboxWidget> checkBoxMap;
-		private Rectangle checkBoxRect;
-
-		private final Map<String, ArrayList<String>> map;
+		private final ArrayList<CheckboxWidget> checkBoxList;
+		private final Rectangle checkBoxRect;
 		
-		public ListGui(MinecraftClient mc, EditMobListScreen screen, List<String> list)
+		public ListGui(MinecraftClient mc, EditMobListScreen screen, List<MobListSetting.MobValue> list)
 		{
 			super(mc, screen.width, screen.height, 32, screen.height - 64, 30);
 			this.mc = mc;
 			this.list = list;
 
-			this.map = null;
-
 			//
-			checkBoxMap = new HashMap<>();
 			this.checkBoxRect = new Rectangle(0, 0, 20, 20);
-		}
+			//this.checkBoxMap = new HashMap<>();
+			/*try {
+				Rectangle cbR = checkBoxRect;
+				Arrays.stream(list.toArray()).parallel()
+					.map(e -> new CheckboxWidget(
+						cbR.x, cbR.y, cbR.width, cbR.height,
+						Text.literal(e.toString()),
+						((MobListSetting.MobValue)e).isEnabled(), true)
+					)
+					.filter(Objects::nonNull)
+					.forEachOrdered(e -> this.checkBoxList.add(e));
 
-		public ListGui(MinecraftClient mc, EditMobListScreen screen, Map<String, ArrayList<String>> map)
-		{
-			super(mc, screen.width, screen.height, 32, screen.height - 64, 30);
-			this.mc = mc;
-			this.list = new ArrayList<>(map.keySet());
-
-			this.map = map;
-
-			//
-			checkBoxMap = new HashMap<>();
-			this.checkBoxRect = new Rectangle(0, 0, 20, 20);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}*/
+			this.checkBoxList = new ArrayList<>();
 		}
 		
 		@Override
@@ -325,17 +372,16 @@ public final class EditMobListScreen extends Screen
 			if (childClicked && (0 == button)) {
 				int index = getCheckboxAtPosition(mouseX, mouseY);
 				if (index >= 0) {
-					String listEntry = list.get(index);
+					String listEntry = list.get(index).toString();
 
 //					checkBoxMap.get(listEntry).onClick(mouseX, mouseY);
-					checkBoxMap.get(listEntry).mouseClicked(mouseX, mouseY, button);//checkBoxMap.get(listEntry).onPress();
-					//checkBoxMap.get(listEntry).mouseReleased(mouseX, mouseY, button);//checkBoxMap.get(listEntry).onRelease(mouseX, mouseY);
+					checkBoxList.get(index).mouseClicked(mouseX, mouseY, button);
 
-					/*boolean isChecked = false;
-					if (checkBoxMap.get(listEntry).isMouseOver(mouseX, mouseY)) {
-						isChecked = !checkBoxMap.get(listEntry).isChecked();
+					boolean isChecked = checkBoxList.get(index).isChecked();
+					if (checkBoxList.get(index).isMouseOver(mouseX, mouseY)) {
+						isChecked = checkBoxList.get(index).isChecked();
 						isChecked = false;
-					}*/
+					}
 				}
 			}
 
@@ -350,8 +396,24 @@ public final class EditMobListScreen extends Screen
 			if (0 == button) {
 				int index = getCheckboxAtPosition(mouseX, mouseY);
 				if (index >= 0) {
-					String listEntry = list.get(index);
-					checkBoxMap.get(listEntry).mouseReleased(mouseX, mouseY, button);
+					String listEntry = list.get(index).toString();
+					checkBoxList.get(index).mouseReleased(mouseX, mouseY, button);
+
+					//boolean isChecked = checkBoxList.get(index).isChecked();
+					if (checkBoxList.get(index).isMouseOver(mouseX, mouseY)) {
+						boolean checked = checkBoxList.get(index).isChecked();
+
+						//mobListSet.set(index, list.get(index));
+						//checkboxPlaceholder = checkBoxList.get(index);
+						//setValue(index, list.get(index));
+
+						list.get(index).set(checked);
+						mobValuePlaceholder = list.get(index);
+						selectItem(index, button, mouseX, mouseY);
+
+						if (buttonPlaceholder.active)
+							buttonPlaceholder.onPress();
+					}
 				}
 			}
 
@@ -368,15 +430,14 @@ public final class EditMobListScreen extends Screen
 		protected void renderItem(MatrixStack matrixStack, int index, int x, int y,
 			int itemHeight, int mouseX, int mouseY, float partialTicks)
 		{
-			String listEntry = list.get(index);
+			MobListSetting.MobValue listEntry = list.get(index);
 
 			//
 			EntityType<?> entityType = null;
 			try
 			{
-				Identifier id = Identifier.tryParse(listEntry);
-				if (Registry.ENTITY_TYPE.containsId(id))
-					entityType = Registry.ENTITY_TYPE.get(id);
+				if (Registry.ENTITY_TYPE.containsId(listEntry.getMobId()))
+					entityType = Registry.ENTITY_TYPE.get(listEntry.getMobId());
 			}
 			catch(InvalidIdentifierException e)
 			{
@@ -389,10 +450,10 @@ public final class EditMobListScreen extends Screen
 				renderIconAndGetName(matrixStack, entityType, x + 1, y + 1, true);
 
 			fr.draw(matrixStack, displayName, x + 28, y, 0xf0f0f0);
-			fr.draw(matrixStack, "ID: " + listEntry, x + 28, y + 9, 0xa0a0a0);//fr.draw(matrixStack, "TK: " + entityType.getTranslationKey(), x + 28, y + 9, 0xa0a0a0);
+			fr.draw(matrixStack, "ID: " + listEntry.toString(), x + 28, y + 9, 0xa0a0a0);//fr.draw(matrixStack, "TK: " + entityType.getTranslationKey(), x + 28, y + 9, 0xa0a0a0);
 			fr.draw(matrixStack, "Item: " + "WIP", x + 28, y + 18, 0xa0a0a0);
 
-			Identifier lTId = entityType.getLootTableId();
+//			Identifier lTId = entityType.getLootTableId();
 
 			// render CheckboxWidget
 			checkBoxRect.x = x - checkBoxRect.width - 10;
@@ -403,34 +464,31 @@ public final class EditMobListScreen extends Screen
 			Rectangle rect = new Rectangle(checkBoxRect);//Rect2i rect = checkBoxRect;
 			rect.y = y + ((this.itemHeight - rect.height) / 2);
 
-			if (checkBoxMap.isEmpty() || !checkBoxMap.containsKey(listEntry)) {
-				boolean showMessage = false;
+			/*if (checkBoxMap.isEmpty() || !checkBoxMap.containsKey(listEntry.toString())) {
+				boolean showMessage = true;
 				boolean isChecked = false;
-				try
-				{
-					showMessage = map.get(listEntry).get(0) != listEntry;
+				//try
+				//{
+					//showMessage = map.get(listEntry).get(0) != listEntry;
 
-					isChecked = Integer.parseInt(
-						map.get(listEntry).get(1),
-						10
-					) > 0;
-				}
-				catch (NullPointerException | NumberFormatException | IndexOutOfBoundsException e)
-				{
+					isChecked = listEntry.isEnabled();
+				//}
+				//catch (NullPointerException | NumberFormatException | IndexOutOfBoundsException e)
+				//{
 					//e.printStackTrace();
-				}
+				//}
 
 				checkBoxMap.put(
-					listEntry,
+					listEntry.toString(),
 					new CheckboxWidget(
 						rect.x, rect.y, rect.width, rect.height,
-						Text.literal(listEntry),
+						Text.literal(listEntry.toString()),
 						isChecked, showMessage
 					)
 				);
-			}
+			}*/
 
-			boolean checked = checkBoxMap.get(listEntry).isChecked();
+			boolean checked = checkBoxList.get(index).isChecked();//checkBoxMap.get(listEntry.toString()).isChecked();
 			if (checked) {
 				checked = false;
 			}
@@ -439,13 +497,12 @@ public final class EditMobListScreen extends Screen
 //				checkBoxWid.visible = false;
 //			}
 
-			checkBoxMap.get(listEntry).x = rect.x;//checkBoxWid.x = rect.x;
-			checkBoxMap.get(listEntry).y = rect.y;//checkBoxWid.y = rect.y;
-			//checkBoxMap.replace(listEntry, checkBoxWid);
+			checkBoxList.get(index).x = rect.x;//checkBoxMap.get(listEntry.toString()).x = rect.x;
+			checkBoxList.get(index).y = rect.y;//checkBoxMap.get(listEntry.toString()).y = rect.y;
 			//CheckboxWidget checkBoxWid = new CheckboxWidget(
 			//	rect.x, rect.y, rect.width, rect.height, Text.literal(listEntry), checked, true);
 
-			checkBoxMap.get(listEntry).render(matrixStack, mouseX, mouseY, partialTicks);//checkBoxWid.render(matrixStack, mouseX, mouseY, partialTicks);
+			checkBoxList.get(index).render(matrixStack, mouseX, mouseY, partialTicks);
 		}
 
 		@Override

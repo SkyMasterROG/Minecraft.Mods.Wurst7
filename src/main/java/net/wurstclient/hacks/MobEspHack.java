@@ -8,7 +8,7 @@
 package net.wurstclient.hacks;
 
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -26,27 +26,23 @@ import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Matrix4f;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.registry.Registry;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
-import net.wurstclient.clickgui.ClickGui;
-import net.wurstclient.clickgui.Component;
-import net.wurstclient.clickgui.Window;
 import net.wurstclient.events.CameraTransformViewBobbingListener;
 import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
 import net.wurstclient.hack.Hack;
-import net.wurstclient.hud.IngameHUD;
 import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.EnumSetting;
 import net.wurstclient.settings.MobListSetting;
-import net.wurstclient.settings.Setting;
 import net.wurstclient.util.RenderUtils;
 import net.wurstclient.util.RotationUtils;
 
@@ -70,17 +66,17 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	private final CheckboxSetting filterMobs = new CheckboxSetting(
 		"Filter Mobs", "Won't show other mobs.", false);
 
-	private final EnumSetting<OnlyMob_> onlyMob =
-		new EnumSetting<>("OnlyMob", OnlyMob_.values(), OnlyMob_.zombie_villager);
-	// https://minecraft.fandom.com/wiki/Category:Entities
-	private final MobListSetting onlyMob_0 = new MobListSetting("onlyList", "",
-		"minecraft:zombie_villager", "minecraft:warden", "minecraft:bee",
-		"minecraft:squid", "minecraft:wither_skeleton", "minecraft:shulker", "minecraft:slime", "minecraft:wolf", "minecraft:axolotl");
-
 	private final CheckboxSetting names = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
 
+	// https://minecraft.fandom.com/wiki/Category:Entities
+	private final MobListSetting onlyMob_0 = new MobListSetting(
+		"onlyList", "",
+		"minecraft:zombie_villager", "minecraft:bee;1", "minecraft:squid"
+	);
+
 	private final ArrayList<MobEntity> mobs = new ArrayList<>();
+
 	private VertexBuffer mobBox;
 	
 	public MobEspHack()
@@ -91,46 +87,15 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		addSetting(boxSize);
 		addSetting(filterInvisible);
 
-		addSetting(filterMobs);
-		addSetting(onlyMob);
-		addSetting(onlyMob_0);
 		addSetting(names);
+		addSetting(filterMobs);
+		addSetting(onlyMob_0);
+		
 	}
 	
 	@Override
 	public void onEnable()
 	{
-		if(filterMobs.isChecked()) {
-//			filterMobs.lock(filterMobs);
-			
-			Component onlyMobCom = onlyMob.getComponent();
-			if(onlyMobCom != null) {
-				Window w_cgui_wdw = onlyMob.getComponent().getParent();
-				if(w_cgui_wdw != null) {
-					int i_tmp = onlyMob.getComponent().getParent().countChildren();
-					onlyMobCom = onlyMob.getComponent().getParent().getChild(0);
-
-					//onlyMob.getComponent().getParent().setInvisible(true);
-					//onlyMob.getComponent().getParent().setInvisible(filterMobs.isChecked());
-				}
-			}
-
-			ClickGui gui = this.WURST.getGui();
-			if (null != gui) {
-				gui.getTxtColor();
-
-				/*Window win = new Window("test");
-				win.validate();
-				gui.addWindow(win);;*/
-			}
-
-			
-						
-//			filterMobs.unlock();
-		} else {
-			onlyMob.getComponent().setHeight(1);
-		}
-
 		EVENTS.add(UpdateListener.class, this);
 		EVENTS.add(CameraTransformViewBobbingListener.class, this);
 		EVENTS.add(RenderListener.class, this);
@@ -165,28 +130,24 @@ public final class MobEspHack extends Hack implements UpdateListener,
 			stream = stream.filter(e -> !e.isInvisible());
 
 		if(filterMobs.isChecked()) {
-			stream = stream.filter(e -> (e.getType() == onlyMob.getSelected().getType()));
+			stream = stream.filter(e -> (onlyMob_0.isEnabled(e.getType())));
 
-			//if((onlyMob.getSelected().getDescription() != null) && (!onlyMob.getSelected().getDescription().isEmpty())) {
-			if(onlyMob.getSelected().getItem() != null) {
-				//String sName[] = onlyMob.getSelected().toString().split(",");
+			/*if(onlyMob.getSelected().getItem() != null) {
 				String sItemId = onlyMob.getSelected().getDescription().toLowerCase();//"trident";
 
-				//stream = stream.filter(e -> e.toString().contains(sName[0]));
 				try {
 					//net.minecraft.item.Item mcItem = net.minecraft.util.registry.Registry.ITEM.get(new net.minecraft.util.Identifier(sItemId));
 					stream = stream.filter(e -> e.isHolding(onlyMob.getSelected().getItem()));
 
 				} catch(net.minecraft.util.InvalidIdentifierException e) {
-					/*throw */new net.wurstclient.command.CmdSyntaxError("Invalid item: " + sItemId);
+					//throw
+					new net.wurstclient.command.CmdSyntaxError("Invalid item: " + sItemId);
 				}
-
-			}/* else {
-				stream = stream.filter(e -> e.toString().contains(onlyMob.getSelected().toString()));
 			}*/
 		}
 		
 		mobs.addAll(stream.collect(Collectors.toList()));
+		int sizeI = mobs.size();
 	}
 	
 	@Override
@@ -361,65 +322,6 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		public String toString()
 		{
 			return name;
-		}
-	}
-
-	private enum OnlyMob_ {
-		drowned("Drowned", "Trident", net.minecraft.entity.EntityType.DROWNED, net.minecraft.item.Items.TRIDENT),
-		allay("Allay", net.minecraft.entity.EntityType.ALLAY),
-		axolotl("Axolotl", net.minecraft.entity.EntityType.AXOLOTL),
-		bee("Bee", net.minecraft.entity.EntityType.BEE),
-		enderman("Enderman", net.minecraft.entity.EntityType.ENDERMAN),
-		ender_dragon("Ender Dragon", net.minecraft.entity.EntityType.ENDER_DRAGON),
-		evoker("Evoker", net.minecraft.entity.EntityType.EVOKER),
-		experience_orb("Experience orb", net.minecraft.entity.EntityType.EXPERIENCE_ORB),
-		eye_of_ender("Eye of Ender", net.minecraft.entity.EntityType.EYE_OF_ENDER),
-		glow_squid("Glow Squid", net.minecraft.entity.EntityType.GLOW_SQUID),
-		magma_cube("Magma cube", net.minecraft.entity.EntityType.MAGMA_CUBE),
-		pillager("Pillager", net.minecraft.entity.EntityType.PILLAGER),
-		shulker("Shulker", net.minecraft.entity.EntityType.SHULKER),
-		skeleton_hourse(net.minecraft.entity.mob.SkeletonHorseEntity.ID_KEY, net.minecraft.entity.EntityType.SKELETON_HORSE),
-		slime("Slime", net.minecraft.entity.EntityType.SLIME),
-		squid("Squid", net.minecraft.entity.EntityType.SQUID),
-		warden("Warden", net.minecraft.entity.EntityType.WARDEN),
-		wither_skeleton("Wither skeleton", net.minecraft.entity.EntityType.WITHER_SKELETON),
-		wither_skull("Wither skeleton skull", net.minecraft.entity.EntityType.WITHER_SKULL),
-		wolf("Wolf", net.minecraft.entity.EntityType.WOLF),
-		zombie_villager("Zombie Villager", net.minecraft.entity.EntityType.ZOMBIE_VILLAGER);
-		
-		private final String name;
-		private String description;
-		net.minecraft.entity.EntityType<?> type;
-		net.minecraft.item.Item item;
-		
-		
-		private OnlyMob_(String name, net.minecraft.entity.EntityType<?> type) {
-			this.name = name;
-			this.type = type;
-		}
-
-		private OnlyMob_(String name, String description, net.minecraft.entity.EntityType<?> type, net.minecraft.item.Item item) {
-			this.name = name + ", with " + description;
-			this.description = description;
-			this.type = type;
-			this.item = item;
-		}
-
-		@Override
-		public String toString() {
-			return this.name;
-		}
-
-		public net.minecraft.entity.EntityType<?> getType() {
-			return this.type;
-		}
-
-		public net.minecraft.item.Item getItem() {
-			return this.item;
-		}
-
-		public String getDescription() {
-			return this.description;
 		}
 	}
 }
