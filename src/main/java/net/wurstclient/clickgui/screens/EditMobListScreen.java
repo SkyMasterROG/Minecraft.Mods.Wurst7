@@ -10,6 +10,7 @@ package net.wurstclient.clickgui.screens;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -36,9 +37,6 @@ import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryKey;
-import net.wurstclient.clickgui.components.CheckboxComponent;
-import net.wurstclient.settings.CheckboxLock;
-import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.MobListSetting;
 import net.wurstclient.util.ListWidget;
 
@@ -47,7 +45,10 @@ public final class EditMobListScreen extends Screen
 	private final Screen prevScreen;
 	private final MobListSetting mobListSet;
 	
+	private final ArrayList<String> listSugg;
+
 	private ListGui listGui;
+	private ListSuggestion listSuggW;
 	private TextFieldWidget mobIdField;
 	private TextFieldWidget itemIdField;
 	private ButtonWidget addButton;
@@ -60,6 +61,7 @@ public final class EditMobListScreen extends Screen
 
 	private final Rectangle textFieldRect;
 	private final Rectangle buttondRect;
+	private Rectangle listSuggRect;
 	
 	private EntityType<?> entityToAdd;
 	
@@ -76,7 +78,7 @@ public final class EditMobListScreen extends Screen
 		Set<RegistryKey<EntityType<?>>> keys = Registry.ENTITY_TYPE.getKeys();
 		int sizeI = keys.size();
 
-		List<String> keyList = new ArrayList<>();
+		this.listSugg = new ArrayList<>();
 		int charMax = 0;
 		String signMax = "";
 		for (RegistryKey<EntityType<?>> key : keys) {
@@ -92,11 +94,12 @@ public final class EditMobListScreen extends Screen
 				signMax = new String(array);
 			}
 
-			keyList.add(id.toString());
+			this.listSugg.add(id.toString());
 
 			id = null;
 		}
-		sizeI = keyList.size();
+		sizeI = this.listSugg.size();
+		//listSuggRect = new Rectangle((int)tfR.getMaxX(), tfR.y, 30, tfR.height - 2);
 	}
 
 	/*private static void setValue(int index, MobListSetting.MobValue value)
@@ -169,6 +172,9 @@ public final class EditMobListScreen extends Screen
 		);
 		addSelectableChild(itemIdField);
 		itemIdField.setMaxLength(256);
+
+		listSuggRect = new Rectangle(tfR.x, listGui.getButtom() + 1, tfR.width, client.textRenderer.fontHeight * 6);
+		listSuggW = new ListSuggestion(client, this, listSuggRect, client.textRenderer.fontHeight, Collections.unmodifiableList(this.listSugg));
 		
 		//
 		Rectangle bR = buttondRect;
@@ -247,6 +253,7 @@ public final class EditMobListScreen extends Screen
 		mobIdField.mouseClicked(mouseX, mouseY, button);
 		itemIdField.mouseClicked(mouseX, mouseY, button);
 		listGui.mouseClicked(mouseX, mouseY, button);
+		listSuggW.mouseClicked(mouseX, mouseY, button);
 		
 		if(!childClicked && (mouseX < (width - 220) / 2
 			|| mouseX > width / 2 + 129 || mouseY < 32 || mouseY > height - 64))
@@ -260,6 +267,8 @@ public final class EditMobListScreen extends Screen
 		double deltaX, double deltaY)
 	{
 		listGui.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+		listSuggW.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+
 		return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
 	}
 	
@@ -267,6 +276,8 @@ public final class EditMobListScreen extends Screen
 	public boolean mouseReleased(double mouseX, double mouseY, int button)
 	{
 		listGui.mouseReleased(mouseX, mouseY, button);
+		listSuggW.mouseReleased(mouseX, mouseY, button);
+
 		return super.mouseReleased(mouseX, mouseY, button);
 	}
 	
@@ -275,6 +286,8 @@ public final class EditMobListScreen extends Screen
 		double amount)
 	{
 		listGui.mouseScrolled(mouseX, mouseY, amount);
+		listSuggW.mouseScrolled(mouseX, mouseY, amount);
+
 		return super.mouseScrolled(mouseX, mouseY, amount);
 	}
 	
@@ -307,14 +320,15 @@ public final class EditMobListScreen extends Screen
 	@Override
 	public void tick()
 	{
+		//
 		Text message = Text.literal("");
 		mobIdField.tick();
+
 		if (listGui.selected >= 0 && listGui.selected < listGui.list.size()) {
 			mobIdField.setText(listGui.list.get(listGui.selected).toString());
 			//message = Text.literal(listGui.list.get(listGui.selected).toString());
 			mobIdField.setMessage(message);
-			//mobIdField.active = false;
-			mobIdField.setEditable(false);
+			mobIdField.setEditable(false);//mobIdField.active = false;
 			addButton.visible = false;
 // TODO			saveButton.visible = true;
 
@@ -323,29 +337,30 @@ public final class EditMobListScreen extends Screen
 			}
 		}
 		else if (!mobIdField.isFocused()) {
-			//mobIdField.active = true;
-			mobIdField.setText("");
+			mobIdField.setText("");//mobIdField.active = true;
 			mobIdField.setEditable(true);
 			addButton.visible = true;
 		}
 
-		itemIdField.tick();
-		
+		//
 		String mobIdS = mobIdField.getText();
+		listSuggW.toSuggest(mobIdS);
 		entityToAdd = getMobFromName(mobIdS);
 		addButton.active = entityToAdd != null;
 
+		//
+		itemIdField.tick();
 		String itemIdS = itemIdField.getText();
 //		Item itemToAdd = getMobFromName(itemIdS);
 //		addButton.active = entityToAdd != null;
 		
+		//
 		removeButton.active =
 			listGui.selected >= 0 && listGui.selected < listGui.list.size();
 	}
 	
 	@Override
-	public void render(MatrixStack matrixStack, int mouseX, int mouseY,
-		float partialTicks)
+	public void render(MatrixStack matrixStack, int mouseX, int mouseY, float partialTicks)
 	{
 		//
 		listGui.render(matrixStack, mouseX, mouseY, partialTicks);
@@ -391,11 +406,12 @@ public final class EditMobListScreen extends Screen
 
 		matrixStack.pop();
 
-// TODO create suggation textlist
-//https://fabricmc.net/wiki/tutorial:command_suggestions
-//https://maven.fabricmc.net/docs/yarn-1.18.2+build.1/net/minecraft/command/argument/ItemStringReader.html
-//https://fabricmc.net/wiki/tutorial:custom_resources
-//https://stackoverflow.com/questions/41295375/how-to-show-suggestion-list-for-autocomplete-textview-that-shows-only-those-word
+		// TODO create suggestion textlist
+		//https://fabricmc.net/wiki/tutorial:command_suggestions
+		//https://maven.fabricmc.net/docs/yarn-1.18.2+build.1/net/minecraft/command/argument/ItemStringReader.html
+		//https://fabricmc.net/wiki/tutorial:custom_resources
+		//https://stackoverflow.com/questions/41295375/how-to-show-suggestion-list-for-autocomplete-textview-that-shows-only-those-word
+		listSuggW.render(matrixStack, mouseX, mouseY, partialTicks);
 
 		// TODO render background Rectangle
 		xI = mobIdField.x - 25;
@@ -419,6 +435,7 @@ public final class EditMobListScreen extends Screen
 		return false;
 	}
 	
+	//
 	private static class ListGui extends ListWidget
 	{
 		private final MinecraftClient mc;
@@ -708,6 +725,91 @@ public final class EditMobListScreen extends Screen
 			}
 
 			return index;
+		}
+	}
+
+	private static class ListSuggestion extends ListWidget
+	{
+		private final MinecraftClient mc;
+		private final Rectangle rectangle;
+
+		private final List<String> source;
+		private final List<String> suggestL;
+
+		private int selected = -1;
+		private String suggestS;
+		
+		public ListSuggestion(MinecraftClient mc, EditMobListScreen screen, Rectangle rectangle, int itemHeight, List<String> source)
+		{
+			//super(mc, screen.width / 2, screen.height / 2, 50, screen.height - 100, 10);
+			super(mc, rectangle.width, rectangle.height, rectangle.y - rectangle.height, rectangle.y, itemHeight);
+
+			this.rectangle = rectangle;
+			this.mc = mc;
+			this.source = source;
+			this.suggestL = new ArrayList<>();
+		}
+
+		private Boolean toSuggest(String suggest)
+		{
+			if (null != suggest && suggest.length() > 1) {
+				this.suggestS = suggest;
+				this.visible = true;
+
+				this.suggestL.clear();
+				for (String entry : this.source) {
+					if (entry.toLowerCase().contains(suggest.toLowerCase()))
+						this.suggestL.add(entry);
+
+					if (this.suggestL.size() > 6) {
+						this.suggestL.add("...");
+						break;
+					}
+				}
+			}
+
+			this.visible = false;
+			return false;
+		}
+
+		@Override
+		protected int getItemCount() {
+			return source.size();
+		}
+
+		@Override
+		protected boolean isSelectedItem(int index) {
+			return index == selected;
+		}
+
+		@Override
+		protected void renderBackground()
+		{
+
+		}
+
+		@Override
+		//(MatrixStack matrixStack, int index, int x, int y, int itemHeight, int mouseX, int mouseY, float partialTicks)
+		protected void renderItem(MatrixStack matrixStack,
+			int index, int x, int y, int itemHeight,
+			int mouseX, int mouseY, float partialTicks)
+		{
+			String entry = "..";
+
+			//
+			try {
+//				if (this.suggestL.size() < 1)
+//					return;
+
+				entry = this.suggestL.get(index);
+			}
+			catch(InvalidIdentifierException e) {
+				entry = "invalid";//return;
+			}
+
+			// render..
+			TextRenderer tr = mc.textRenderer;
+			tr.draw(matrixStack, entry, x, y, 0xF0F0F000);
 		}
 	}
 

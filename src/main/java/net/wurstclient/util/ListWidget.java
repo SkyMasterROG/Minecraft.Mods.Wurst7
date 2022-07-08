@@ -90,8 +90,9 @@ public abstract class ListWidget extends AbstractParentElement
 	protected void updateItemPosition(int index, int x, int y, float delta)
 	{}
 	
-	protected abstract void renderItem(MatrixStack matrixStack, int x, int y,
-		int itemHeight, int mouseX, int mouseY, int i, float f);
+	protected abstract void renderItem(MatrixStack matrixStack,
+		int index, int x, int y, int itemHeight,
+		int mouseX, int mouseY, float delta);
 	
 	protected void renderHeader(int x, int y, Tessellator tessellator)
 	{}
@@ -160,12 +161,12 @@ public abstract class ListWidget extends AbstractParentElement
 				.texture(left / 32.0F, (top + (int)scrollAmount) / 32.0F)
 				.color(32, 32, 32, 255).next();
 			tessellator.draw();
-			int k = left + width / 2 - getRowWidth() / 2 + 2;
-			int l = top + 4 - (int)scrollAmount;
+			int posX = left + width / 2 - getRowWidth() / 2 + 2;
+			int posY = top + 4 - (int)scrollAmount;
 			if(renderHeader)
-				renderHeader(k, l, tessellator);
+				renderHeader(posX, posY, tessellator);
 			
-			renderList(matrices, k, l, mouseX, mouseY, delta);
+			renderList(matrices, posX, posY, mouseX, mouseY, delta);
 			RenderSystem.disableDepthTest();
 			renderHoleBackground(0, top, 255, 255);
 			renderHoleBackground(bottom, height, 255, 255);
@@ -371,21 +372,22 @@ public abstract class ListWidget extends AbstractParentElement
 		return 220;
 	}
 	
-	protected void renderList(MatrixStack matrixStack, int i, int j, int k,
-		int l, float f)
+	protected void renderList(MatrixStack matrixStack,
+		int x, int y,
+		int mouseX, int mouseY, float delta)
 	{
 		int m = getItemCount();
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		
-		for(int n = 0; n < m; ++n)
+		for(int index = 0; index < m; ++index)
 		{
-			int o = j + n * itemHeight + headerHeight;
-			int p = itemHeight - 4;
-			if(o > bottom || o + p < top)
-				updateItemPosition(n, i, o, f);
+			int posY = y + index * this.itemHeight + headerHeight;
+			int itemH = this.itemHeight - 4;
+			if(posY > bottom || posY + itemH < top)
+				updateItemPosition(index, x, posY, delta);
 			
-			if(renderSelection && isSelectedItem(n))
+			if(renderSelection && isSelectedItem(index))
 			{
 				int q = left + width / 2 - getRowWidth() / 2;
 				int r = left + width / 2 + getRowWidth() / 2;
@@ -394,23 +396,23 @@ public abstract class ListWidget extends AbstractParentElement
 				RenderSystem.setShaderColor(g, g, g, 1.0F);
 				bufferBuilder.begin(VertexFormat.DrawMode.QUADS,
 					VertexFormats.POSITION);
-				bufferBuilder.vertex(q, o + p + 2, 0.0D).next();
-				bufferBuilder.vertex(r, o + p + 2, 0.0D).next();
-				bufferBuilder.vertex(r, o - 2, 0.0D).next();
-				bufferBuilder.vertex(q, o - 2, 0.0D).next();
+				bufferBuilder.vertex(q, posY + itemH + 2, 0.0D).next();
+				bufferBuilder.vertex(r, posY + itemH + 2, 0.0D).next();
+				bufferBuilder.vertex(r, posY - 2, 0.0D).next();
+				bufferBuilder.vertex(q, posY - 2, 0.0D).next();
 				tessellator.draw();
 				RenderSystem.setShaderColor(0.0F, 0.0F, 0.0F, 1.0F);
 				bufferBuilder.begin(VertexFormat.DrawMode.QUADS,
 					VertexFormats.POSITION);
-				bufferBuilder.vertex(q + 1, o + p + 1, 0.0D).next();
-				bufferBuilder.vertex(r - 1, o + p + 1, 0.0D).next();
-				bufferBuilder.vertex(r - 1, o - 1, 0.0D).next();
-				bufferBuilder.vertex(q + 1, o - 1, 0.0D).next();
+				bufferBuilder.vertex(q + 1, posY + itemH + 1, 0.0D).next();
+				bufferBuilder.vertex(r - 1, posY + itemH + 1, 0.0D).next();
+				bufferBuilder.vertex(r - 1, posY - 1, 0.0D).next();
+				bufferBuilder.vertex(q + 1, posY - 1, 0.0D).next();
 				tessellator.draw();
 				RenderSystem.enableTexture();
 			}
 			
-			renderItem(matrixStack, n, i, o, p, k, l, f);
+			renderItem(matrixStack, index, x, posY, itemH, mouseX, mouseY, delta);
 		}
 		
 	}
