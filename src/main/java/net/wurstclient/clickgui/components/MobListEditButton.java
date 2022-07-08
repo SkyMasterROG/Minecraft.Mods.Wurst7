@@ -22,18 +22,21 @@ import net.minecraft.util.math.Matrix4f;
 import net.wurstclient.WurstClient;
 import net.wurstclient.clickgui.ClickGui;
 import net.wurstclient.clickgui.Component;
-//import net.wurstclient.clickgui.screens.EditBlockListScreen;
 import net.wurstclient.clickgui.screens.EditMobListScreen;
-//import net.wurstclient.settings.BlockListSetting;
+import net.wurstclient.settings.CheckboxLock;
 import net.wurstclient.settings.MobListSetting;
 
-public final class MobListEditButton extends Component
+public final class MobListEditButton extends Component implements CheckboxLock
 {
 	private final MobListSetting setting;
 	private int buttonWidth;
 
 	private String buttonString;
-	private TextRenderer fr;// = WurstClient.MC.textRenderer;
+	private TextRenderer fr;
+	
+	private boolean checked;
+	private final boolean checkedByDefault;
+	private CheckboxLock lock;
 	
 	public MobListEditButton(MobListSetting setting)
 	{
@@ -44,6 +47,7 @@ public final class MobListEditButton extends Component
 		this.fr = WurstClient.MC.textRenderer;
 		buttonWidth = fr.getWidth(buttonString);
 		
+		this.checkedByDefault = false;
 		setWidth(getDefaultWidth());
 		setHeight(getDefaultHeight());
 	}
@@ -140,6 +144,11 @@ public final class MobListEditButton extends Component
 
 		return name;
 	}
+
+	public final boolean isLocked()
+	{
+		return lock != null;
+	}
 	
 	@Override
 	public int getDefaultWidth()
@@ -153,5 +162,11 @@ public final class MobListEditButton extends Component
 	public int getDefaultHeight()
 	{
 		return 11;
+	}
+
+	@Override
+	public boolean isChecked() {
+		// TODO Auto-generated method stub
+		return isLocked() ? lock.isChecked() : checked;
 	}
 }

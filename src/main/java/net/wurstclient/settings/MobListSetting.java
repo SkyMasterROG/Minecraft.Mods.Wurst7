@@ -48,6 +48,7 @@ public final class MobListSetting extends Setting
 				.map(e -> new MobValue(e))
 				.filter(Objects::nonNull)
 				.filter(e -> e.isValid())
+				//.distinct().sorted()
 				.forEachOrdered(e -> this.mobValues.add(e));
 
 		} catch (Exception e) {

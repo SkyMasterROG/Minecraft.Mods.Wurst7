@@ -36,6 +36,8 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.registry.Registry;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
+import net.wurstclient.clickgui.Component;
+import net.wurstclient.clickgui.components.MobListEditButton;
 import net.wurstclient.events.CameraTransformViewBobbingListener;
 import net.wurstclient.events.RenderListener;
 import net.wurstclient.events.UpdateListener;
@@ -63,15 +65,14 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	private final CheckboxSetting filterInvisible = new CheckboxSetting(
 		"Filter invisible", "Won't show invisible mobs.", false);
 	
-	private final CheckboxSetting filterMobs = new CheckboxSetting(
-		"Filter Mobs", "Won't show other mobs.", false);
-
 	private final CheckboxSetting names = new CheckboxSetting(
 		"Show Mobs Names", "show mobs names.", false);
 
 	// https://minecraft.fandom.com/wiki/Category:Entities
-	private final MobListSetting onlyMob_0 = new MobListSetting(
-		"onlyList", "",
+	private final CheckboxSetting filterMobs = new CheckboxSetting(
+		"Filter Mobs", "Won't show other Mobs.", false);
+	private final MobListSetting onlyMob = new MobListSetting(
+		"Only List", "filter List of shown Mobs",
 		"minecraft:zombie_villager", "minecraft:bee;1", "minecraft:squid"
 	);
 
@@ -89,7 +90,7 @@ public final class MobEspHack extends Hack implements UpdateListener,
 
 		addSetting(names);
 		addSetting(filterMobs);
-		addSetting(onlyMob_0);
+		addSetting(onlyMob);
 		
 	}
 	
@@ -130,7 +131,13 @@ public final class MobEspHack extends Hack implements UpdateListener,
 			stream = stream.filter(e -> !e.isInvisible());
 
 		if(filterMobs.isChecked()) {
-			stream = stream.filter(e -> (onlyMob_0.isEnabled(e.getType())));
+			// TODO: MobListEditButton with Checkbox
+			Component component = onlyMob.getComponent();
+			if (null != component) {
+				boolean checked = ((MobListEditButton)component).isChecked();
+			}
+
+			stream = stream.filter(e -> (onlyMob.isEnabled(e.getType())));
 
 			/*if(onlyMob.getSelected().getItem() != null) {
 				String sItemId = onlyMob.getSelected().getDescription().toLowerCase();//"trident";

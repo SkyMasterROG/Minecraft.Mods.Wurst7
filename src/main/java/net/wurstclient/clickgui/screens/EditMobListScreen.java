@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
@@ -34,6 +35,10 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.InvalidIdentifierException;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
+import net.wurstclient.clickgui.components.CheckboxComponent;
+import net.wurstclient.settings.CheckboxLock;
+import net.wurstclient.settings.CheckboxSetting;
 import net.wurstclient.settings.MobListSetting;
 import net.wurstclient.util.ListWidget;
 
@@ -44,6 +49,7 @@ public final class EditMobListScreen extends Screen
 	
 	private ListGui listGui;
 	private TextFieldWidget mobIdField;
+	private TextFieldWidget itemIdField;
 	private ButtonWidget addButton;
 	private ButtonWidget removeButton;
 	private ButtonWidget doneButton;
@@ -51,6 +57,9 @@ public final class EditMobListScreen extends Screen
 	//private static CheckboxWidget checkboxPlaceholder;
 	private static ButtonWidget buttonPlaceholder;
 	private static MobListSetting.MobValue mobValuePlaceholder;
+
+	private final Rectangle textFieldRect;
+	private final Rectangle buttondRect;
 	
 	private EntityType<?> entityToAdd;
 	
@@ -59,6 +68,35 @@ public final class EditMobListScreen extends Screen
 		super(Text.literal(""));
 		this.prevScreen = prevScreen;
 		this.mobListSet = mobListSet;
+
+		this.textFieldRect = new Rectangle(0, 0, 200, 18);
+		this.buttondRect = new Rectangle(0, 0, 60, 20);
+
+		//Registry.ENTITY_TYPE.getEntry(rawId);
+		Set<RegistryKey<EntityType<?>>> keys = Registry.ENTITY_TYPE.getKeys();
+		int sizeI = keys.size();
+
+		List<String> keyList = new ArrayList<>();
+		int charMax = 0;
+		String signMax = "";
+		for (RegistryKey<EntityType<?>> key : keys) {
+			Identifier id = key.getRegistry();
+			id = key.getValue();
+			String s = key.toString();
+
+			s = id.toString();
+			if(s.length() > charMax) {
+				charMax = s.length();
+				char[] array = new char[charMax];
+				Arrays.fill(array, '0');
+				signMax = new String(array);
+			}
+
+			keyList.add(id.toString());
+
+			id = null;
+		}
+		sizeI = keyList.size();
 	}
 
 	/*private static void setValue(int index, MobListSetting.MobValue value)
@@ -71,7 +109,7 @@ public final class EditMobListScreen extends Screen
 	{
 		//
 		listGui = new ListGui(client, this, mobListSet.getMobValues());
-		Rectangle cbR = listGui.checkBoxRect;
+		Rectangle cbR = listGui.checkboxRect;
 		try {
 			Arrays.stream(listGui.list.toArray()).parallel()
 				.map(e -> new CheckboxWidget(
@@ -87,17 +125,26 @@ public final class EditMobListScreen extends Screen
 		}
 
 		//
+		Rectangle tfR = textFieldRect;
+		tfR.x = (width / 2) - (tfR.width / 2);
+		tfR.y = listGui.getButtom() + 4;
 		mobIdField = new TextFieldWidget(
 			client.textRenderer,
-			width / 2 - 152, height - 55, 150, 18,
+			tfR.x, tfR.y, tfR.width, tfR.height,
 			Text.literal("")
 		);
 		addSelectableChild(mobIdField);
 		mobIdField.setMaxLength(256);
-		
-		addDrawableChild(
-			addButton = new ButtonWidget(
-				width / 2 - 2, height - 56, 30, 20,
+
+		Rectangle bRectAdd = new Rectangle((int)tfR.getMaxX(), tfR.y, 30, tfR.height - 2);
+		//bRectAdd.x += (tfR.width / 2) - bRectAdd.width - 4;
+		bRectAdd.x -= bRectAdd.width + 1;
+		//Double tmpD = tfR.getMaxX();
+		//tmpD = tfR.getCenterX();
+		bRectAdd.y += (tfR.height - bRectAdd.height) / 2;
+		addButton = addDrawableChild(
+			new ButtonWidget(
+				bRectAdd.x, bRectAdd.y, bRectAdd.width, bRectAdd.height,
 				Text.literal("Add"),
 				b -> {
 					MobListSetting.MobValue value = mobListSet.add(entityToAdd);
@@ -112,11 +159,25 @@ public final class EditMobListScreen extends Screen
 				}
 			)
 		);
+
+		//tfR.x = width / 2 - 152;
+		tfR.y += tfR.height + 4;//height - 55;
+		itemIdField = new TextFieldWidget(
+			client.textRenderer,
+			tfR.x, tfR.y, tfR.width, tfR.height,
+			Text.literal("")
+		);
+		addSelectableChild(itemIdField);
+		itemIdField.setMaxLength(256);
 		
+		//
+		Rectangle bR = buttondRect;
+		bR.x = tfR.x + tfR.width + 4;
+		bR.y = listGui.getButtom() + 4;
 		addDrawableChild(
 			removeButton = new ButtonWidget(
-				width / 2 + 52, height - 56, 100, 20,
-				Text.literal("Remove Selected"),
+				bR.x, bR.y, bR.width, bR.height,
+				Text.literal("Remove"),
 				b -> {
 					mobListSet.remove(listGui.selected);
 					listGui.checkBoxList.remove(listGui.selected);
@@ -125,23 +186,20 @@ public final class EditMobListScreen extends Screen
 			)
 		);
 
-		// https://maven.fabricmc.net/docs/yarn-1.16.5+build.2/net/minecraft/client/gui/widget/package-summary.html
+		bR.y += tfR.height + 4;
 		addDrawableChild(
-			buttonPlaceholder = new ButtonWidget(
-				cbR.x, cbR.y, cbR.width, cbR.height,
-				Text.literal("placeholder"),
-				b -> {
-					mobListSet.set(listGui.selected, mobValuePlaceholder);
-					//listGui.checkBoxList.remove(listGui.selected);
-				}
+			doneButton = new ButtonWidget(
+				bR.x, bR.y, bR.width, bR.height,
+				Text.literal("Done"),
+				b -> client.setScreen(prevScreen)
 			)
 		);
-		buttonPlaceholder.visible = false;
 		
+		// Reset to Defaults
 		addDrawableChild(
 			new ButtonWidget(
-				width - 108, 8, 100, 20,
-				Text.literal("Reset to Defaults"),
+				width - bR.width - 4, 8, bR.width, bR.height,
+				Text.literal("Reset"),
 				b -> client.setScreen(
 					new ConfirmScreen(
 						b2 -> {
@@ -166,14 +224,19 @@ public final class EditMobListScreen extends Screen
 				)
 			)
 		);
-		
+
+		// https://maven.fabricmc.net/docs/yarn-1.16.5+build.2/net/minecraft/client/gui/widget/package-summary.html
 		addDrawableChild(
-			doneButton = new ButtonWidget(
-				width / 2 - 100, height - 28, 200, 20,
-				Text.literal("Done"),
-				b -> client.setScreen(prevScreen)
+			buttonPlaceholder = new ButtonWidget(
+				0, 0, 0, 0,
+				Text.literal("placeholder"),
+				b -> {
+					mobListSet.set(listGui.selected, mobValuePlaceholder);
+					//listGui.checkBoxList.remove(listGui.selected);
+				}
 			)
 		);
+		buttonPlaceholder.visible = false;
 	}
 	
 	@Override
@@ -182,6 +245,7 @@ public final class EditMobListScreen extends Screen
 		boolean childClicked = super.mouseClicked(mouseX, mouseY, button);
 		
 		mobIdField.mouseClicked(mouseX, mouseY, button);
+		itemIdField.mouseClicked(mouseX, mouseY, button);
 		listGui.mouseClicked(mouseX, mouseY, button);
 		
 		if(!childClicked && (mouseX < (width - 220) / 2
@@ -243,11 +307,37 @@ public final class EditMobListScreen extends Screen
 	@Override
 	public void tick()
 	{
+		Text message = Text.literal("");
 		mobIdField.tick();
+		if (listGui.selected >= 0 && listGui.selected < listGui.list.size()) {
+			mobIdField.setText(listGui.list.get(listGui.selected).toString());
+			//message = Text.literal(listGui.list.get(listGui.selected).toString());
+			mobIdField.setMessage(message);
+			//mobIdField.active = false;
+			mobIdField.setEditable(false);
+			addButton.visible = false;
+// TODO			saveButton.visible = true;
+
+			if (listGui.list.get(listGui.selected).hasItem()) {
+				itemIdField.setText(listGui.list.get(listGui.selected).getItemId().toString());
+			}
+		}
+		else if (!mobIdField.isFocused()) {
+			//mobIdField.active = true;
+			mobIdField.setText("");
+			mobIdField.setEditable(true);
+			addButton.visible = true;
+		}
+
+		itemIdField.tick();
 		
-		String idStr = mobIdField.getText();
-		entityToAdd = getMobFromName(idStr);
+		String mobIdS = mobIdField.getText();
+		entityToAdd = getMobFromName(mobIdS);
 		addButton.active = entityToAdd != null;
+
+		String itemIdS = itemIdField.getText();
+//		Item itemToAdd = getMobFromName(itemIdS);
+//		addButton.active = entityToAdd != null;
 		
 		removeButton.active =
 			listGui.selected >= 0 && listGui.selected < listGui.list.size();
@@ -266,21 +356,30 @@ public final class EditMobListScreen extends Screen
 			width / 2, 12, 0xffffff);
 		
 		matrixStack.push();
-		matrixStack.translate(0, 0, 300);
+		//matrixStack.translate(0, 0, 300);
 		
 		mobIdField.render(matrixStack, mouseX, mouseY, partialTicks);
+		itemIdField.render(matrixStack, mouseX, mouseY, partialTicks);
 		super.render(matrixStack, mouseX, mouseY, partialTicks);
 		
-		matrixStack.translate(-64 + width / 2 - 152, 0, 0);
+		//matrixStack.translate(-64 + width / 2 - 152, 0, 0);
 		
+		TextRenderer tr = client.textRenderer;
+		int xI = mobIdField.x + 4;
+		int yI = mobIdField.y + ((mobIdField.getHeight() - tr.fontHeight) / 2);
 		if(mobIdField.getText().isEmpty() && !mobIdField.isFocused())
-			drawStringWithShadow(matrixStack, client.textRenderer,
-				"mob id", 68, height - 50, 0x808080);
+			drawStringWithShadow(matrixStack, tr,
+				"mob id", xI, yI, 0x808080);
+
+		yI = itemIdField.y + ((itemIdField.getHeight() - tr.fontHeight) / 2);
+		if(itemIdField.getText().isEmpty() && !itemIdField.isFocused())
+			drawStringWithShadow(matrixStack, tr,
+				"item id", xI, yI, 0x808080);
 		
-		int border = mobIdField.isFocused() ? 0xffffffff : 0xffa0a0a0;
+		/*int border = mobIdField.isFocused() ? 0xffffffff : 0xffa0a0a0;
 		int black = 0xff000000;
 		
-		fill(matrixStack, 48, height - 56, 64, height - 36, border);
+ 		fill(matrixStack, 48, height - 56, 64, height - 36, border);
 		fill(matrixStack, 49, height - 55, 64, height - 37, black);
 		fill(matrixStack, 214, height - 56, 244, height - 55, border);
 		fill(matrixStack, 214, height - 37, 244, height - 36, border);
@@ -288,12 +387,24 @@ public final class EditMobListScreen extends Screen
 		fill(matrixStack, 214, height - 55, 243, height - 52, black);
 		fill(matrixStack, 214, height - 40, 243, height - 37, black);
 		fill(matrixStack, 214, height - 55, 216, height - 37, black);
-		fill(matrixStack, 242, height - 55, 245, height - 37, black);
-		
+		fill(matrixStack, 242, height - 55, 245, height - 37, black);*/
+
 		matrixStack.pop();
-		
+
+// TODO create suggation textlist
+//https://fabricmc.net/wiki/tutorial:command_suggestions
+//https://maven.fabricmc.net/docs/yarn-1.18.2+build.1/net/minecraft/command/argument/ItemStringReader.html
+//https://fabricmc.net/wiki/tutorial:custom_resources
+//https://stackoverflow.com/questions/41295375/how-to-show-suggestion-list-for-autocomplete-textview-that-shows-only-those-word
+
+		// TODO render background Rectangle
+		xI = mobIdField.x - 25;
+		yI = mobIdField.y - 4;
+		if (itemIdField.isFocused()) {
+			yI = itemIdField.y - 4;
+		}
 		listGui.renderIconAndGetName(matrixStack, entityToAdd,
-			width / 2 - 164, height - 52, false);
+			xI, yI, true);
 	}
 	
 	@Override
@@ -315,7 +426,7 @@ public final class EditMobListScreen extends Screen
 		private int selected = -1;
 
 		private final ArrayList<CheckboxWidget> checkBoxList;
-		private final Rectangle checkBoxRect;
+		private final Rectangle checkboxRect;
 		
 		public ListGui(MinecraftClient mc, EditMobListScreen screen, List<MobListSetting.MobValue> list)
 		{
@@ -324,7 +435,7 @@ public final class EditMobListScreen extends Screen
 			this.list = list;
 
 			//
-			this.checkBoxRect = new Rectangle(0, 0, 20, 20);
+			this.checkboxRect = new Rectangle(0, 0, 20, 20);
 			//this.checkBoxMap = new HashMap<>();
 			/*try {
 				Rectangle cbR = checkBoxRect;
@@ -341,6 +452,11 @@ public final class EditMobListScreen extends Screen
 				e.printStackTrace();
 			}*/
 			this.checkBoxList = new ArrayList<>();
+		}
+
+		private int getButtom()
+		{
+			return this.bottom;
 		}
 		
 		@Override
@@ -456,12 +572,12 @@ public final class EditMobListScreen extends Screen
 //			Identifier lTId = entityType.getLootTableId();
 
 			// render CheckboxWidget
-			checkBoxRect.x = x - checkBoxRect.width - 10;
+			checkboxRect.x = x - checkboxRect.width - 10;
 			if (((y + this.itemHeight) > this.bottom) || (y <= this.top)) {
 				return;
 			}
 
-			Rectangle rect = new Rectangle(checkBoxRect);//Rect2i rect = checkBoxRect;
+			Rectangle rect = new Rectangle(checkboxRect);//Rect2i rect = checkBoxRect;
 			rect.y = y + ((this.itemHeight - rect.height) / 2);
 
 			/*if (checkBoxMap.isEmpty() || !checkBoxMap.containsKey(listEntry.toString())) {
@@ -572,11 +688,11 @@ public final class EditMobListScreen extends Screen
 
 		public int getCheckboxAtPosition(double mouseX, double mouseY)
 		{
-			int i = checkBoxRect.x;
-			int j = checkBoxRect.x + checkBoxRect.width;
+			int i = checkboxRect.x;
+			int j = checkboxRect.x + checkboxRect.width;
 
 			//int fixY = rect.y = y + ((this.itemHeight - rect.height) / 2);
-			int fixY = (this.itemHeight - checkBoxRect.height) / 2;
+			int fixY = (this.itemHeight - checkboxRect.height) / 2;
 
 			int floor = MathHelper.floor(mouseY - top + fixY);
 			int k = floor - headerHeight + (int)scrollAmount - 4;
