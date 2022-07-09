@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+import org.apache.logging.log4j.util.TriConsumer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL11;
 
@@ -48,10 +49,13 @@ public final class EditMobListScreen extends Screen
 	private final ArrayList<String> listSugg;
 
 	private ListGui listGui;
-	private ListSuggestion listSuggW;
+	private SuggestionList listSuggW;
+
 	private TextFieldWidget mobIdField;
 	private TextFieldWidget itemIdField;
 	private ButtonWidget addButton;
+	private ButtonWidget saveButton;
+
 	private ButtonWidget removeButton;
 	private ButtonWidget doneButton;
 
@@ -139,15 +143,13 @@ public final class EditMobListScreen extends Screen
 		addSelectableChild(mobIdField);
 		mobIdField.setMaxLength(256);
 
-		Rectangle bRectAdd = new Rectangle((int)tfR.getMaxX(), tfR.y, 30, tfR.height - 2);
-		//bRectAdd.x += (tfR.width / 2) - bRectAdd.width - 4;
-		bRectAdd.x -= bRectAdd.width + 1;
-		//Double tmpD = tfR.getMaxX();
-		//tmpD = tfR.getCenterX();
-		bRectAdd.y += (tfR.height - bRectAdd.height) / 2;
-		addButton = addDrawableChild(
-			new ButtonWidget(
-				bRectAdd.x, bRectAdd.y, bRectAdd.width, bRectAdd.height,
+		// TODO mouse click do not work
+		Rectangle bRectField = new Rectangle((int)tfR.getMaxX(), tfR.y, 30, tfR.height - 2);
+		bRectField.x -= bRectField.width + 1;
+		bRectField.y += (tfR.height - bRectField.height) / 2;
+		addDrawableChild(
+			addButton = new ButtonWidget(
+				bRectField.x, bRectField.y, bRectField.width, bRectField.height,
 				Text.literal("Add"),
 				b -> {
 					MobListSetting.MobValue value = mobListSet.add(entityToAdd);
@@ -173,8 +175,23 @@ public final class EditMobListScreen extends Screen
 		addSelectableChild(itemIdField);
 		itemIdField.setMaxLength(256);
 
-		listSuggRect = new Rectangle(tfR.x, listGui.getButtom() + 1, tfR.width, client.textRenderer.fontHeight * 6);
-		listSuggW = new ListSuggestion(client, this, listSuggRect, client.textRenderer.fontHeight, Collections.unmodifiableList(this.listSugg));
+		bRectField.y = tfR.y + ((tfR.height - bRectField.height) / 2);
+		addDrawableChild(
+			saveButton = new ButtonWidget(
+				bRectField.x, bRectField.y, bRectField.width, bRectField.height,
+				Text.literal("Save"),
+				b -> {
+					int index = listGui.selected;
+					mobListSet.set(index, listGui.list.get(index));
+					//listGui.checkBoxList.remove(listGui.selected);
+					//mobIdField.setText("");
+				}
+			)
+		);
+
+		//
+		listSuggRect = new Rectangle(tfR.x, listGui.getButtom() + 1, tfR.width, client.textRenderer.fontHeight * 4);
+		listSuggW = new SuggestionList(client, this, listSuggRect, client.textRenderer.fontHeight, Collections.unmodifiableList(this.listSugg));
 		
 		//
 		Rectangle bR = buttondRect;
@@ -253,7 +270,7 @@ public final class EditMobListScreen extends Screen
 		mobIdField.mouseClicked(mouseX, mouseY, button);
 		itemIdField.mouseClicked(mouseX, mouseY, button);
 		listGui.mouseClicked(mouseX, mouseY, button);
-		listSuggW.mouseClicked(mouseX, mouseY, button);
+		//listSuggW.mouseClicked(mouseX, mouseY, button);
 		
 		if(!childClicked && (mouseX < (width - 220) / 2
 			|| mouseX > width / 2 + 129 || mouseY < 32 || mouseY > height - 64))
@@ -267,7 +284,7 @@ public final class EditMobListScreen extends Screen
 		double deltaX, double deltaY)
 	{
 		listGui.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
-		listSuggW.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+		//listSuggW.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
 
 		return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
 	}
@@ -276,7 +293,7 @@ public final class EditMobListScreen extends Screen
 	public boolean mouseReleased(double mouseX, double mouseY, int button)
 	{
 		listGui.mouseReleased(mouseX, mouseY, button);
-		listSuggW.mouseReleased(mouseX, mouseY, button);
+		//listSuggW.mouseReleased(mouseX, mouseY, button);
 
 		return super.mouseReleased(mouseX, mouseY, button);
 	}
@@ -286,7 +303,7 @@ public final class EditMobListScreen extends Screen
 		double amount)
 	{
 		listGui.mouseScrolled(mouseX, mouseY, amount);
-		listSuggW.mouseScrolled(mouseX, mouseY, amount);
+		//listSuggW.mouseScrolled(mouseX, mouseY, amount);
 
 		return super.mouseScrolled(mouseX, mouseY, amount);
 	}
@@ -297,7 +314,7 @@ public final class EditMobListScreen extends Screen
 		switch(keyCode)
 		{
 			case GLFW.GLFW_KEY_ENTER:
-			if(addButton.active)
+			if(addButton.active && addButton.visible)
 				addButton.onPress();
 			break;
 			
@@ -328,23 +345,30 @@ public final class EditMobListScreen extends Screen
 			mobIdField.setText(listGui.list.get(listGui.selected).toString());
 			//message = Text.literal(listGui.list.get(listGui.selected).toString());
 			mobIdField.setMessage(message);
-			mobIdField.setEditable(false);//mobIdField.active = false;
+			mobIdField.active = false;
+			mobIdField.setEditable(false);
 			addButton.visible = false;
-// TODO			saveButton.visible = true;
+			saveButton.visible = true;
 
 			if (listGui.list.get(listGui.selected).hasItem()) {
 				itemIdField.setText(listGui.list.get(listGui.selected).getItemId().toString());
 			}
 		}
 		else if (!mobIdField.isFocused()) {
-			mobIdField.setText("");//mobIdField.active = true;
+			mobIdField.setText("");
+			mobIdField.active = true;
 			mobIdField.setEditable(true);
 			addButton.visible = true;
+			saveButton.visible = false;
 		}
 
 		//
-		String mobIdS = mobIdField.getText();
-		listSuggW.toSuggest(mobIdS);
+		String mobIdS = "";
+		if (mobIdField.isFocused() && mobIdField.isActive())
+			mobIdS = mobIdField.getText();
+
+		listSuggW.visible = listSuggW.toSuggest(mobIdS);
+			
 		entityToAdd = getMobFromName(mobIdS);
 		addButton.active = entityToAdd != null;
 
@@ -728,24 +752,28 @@ public final class EditMobListScreen extends Screen
 		}
 	}
 
-	private static class ListSuggestion extends ListWidget
+	private static class SuggestionList// extends ListWidget
 	{
 		private final MinecraftClient mc;
+
+		private final EditMobListScreen screen;
 		private final Rectangle rectangle;
 
 		private final List<String> source;
 		private final List<String> suggestL;
 
+		private boolean visible;
 		private int selected = -1;
-		private String suggestS;
+		//private String suggestS;
 		
-		public ListSuggestion(MinecraftClient mc, EditMobListScreen screen, Rectangle rectangle, int itemHeight, List<String> source)
+		public SuggestionList(MinecraftClient mc, EditMobListScreen screen, Rectangle rectangle, int itemHeight, List<String> source)
 		{
-			//super(mc, screen.width / 2, screen.height / 2, 50, screen.height - 100, 10);
-			super(mc, rectangle.width, rectangle.height, rectangle.y - rectangle.height, rectangle.y, itemHeight);
-
-			this.rectangle = rectangle;
+			//super(mc, rectangle.width, rectangle.height, rectangle.y - rectangle.height, rectangle.y, itemHeight);
 			this.mc = mc;
+
+			this.screen = screen;
+			this.rectangle = rectangle;
+
 			this.source = source;
 			this.suggestL = new ArrayList<>();
 		}
@@ -753,8 +781,8 @@ public final class EditMobListScreen extends Screen
 		private Boolean toSuggest(String suggest)
 		{
 			if (null != suggest && suggest.length() > 1) {
-				this.suggestS = suggest;
-				this.visible = true;
+				//this.suggestS = suggest;
+				//this.visible = true;
 
 				this.suggestL.clear();
 				for (String entry : this.source) {
@@ -766,51 +794,62 @@ public final class EditMobListScreen extends Screen
 						break;
 					}
 				}
+
+				return true;
 			}
 
-			this.visible = false;
+			//this.visible = false;
+			this.suggestL.clear();
 			return false;
 		}
 
-		@Override
+		//@Override
 		protected int getItemCount() {
-			return source.size();
+			return suggestL.size();
 		}
 
-		@Override
+		//@Override
 		protected boolean isSelectedItem(int index) {
 			return index == selected;
 		}
 
-		@Override
-		protected void renderBackground()
-		{
+		//@Override
+		//protected void renderBackground() {}
 
-		}
-
-		@Override
-		//(MatrixStack matrixStack, int index, int x, int y, int itemHeight, int mouseX, int mouseY, float partialTicks)
-		protected void renderItem(MatrixStack matrixStack,
-			int index, int x, int y, int itemHeight,
+		//@Override
+		protected void render(MatrixStack matrixStack,
+			//int index, int x, int y, int itemHeight,
 			int mouseX, int mouseY, float partialTicks)
 		{
-			String entry = "..";
+			if (!this.visible)
+				return;
 
-			//
-			try {
-//				if (this.suggestL.size() < 1)
-//					return;
+			if (this.suggestL.size() < 1)
+				return;
 
-				entry = this.suggestL.get(index);
-			}
-			catch(InvalidIdentifierException e) {
-				entry = "invalid";//return;
-			}
-
-			// render..
+			GL11.glDisable(GL11.GL_DEPTH_TEST);
+			
+			// TODO render background Rectangle
 			TextRenderer tr = mc.textRenderer;
-			tr.draw(matrixStack, entry, x, y, 0xF0F0F000);
+			//String entry = "ABCDEFGHIJKLMNOPQRSTUVWX1234567890";
+			Rectangle rect = new Rectangle(this.rectangle);
+			tr.draw(matrixStack, "SuggestionList", rect.x, rect.y - (rect.height + tr.fontHeight + 2), 0xF0F0F000);
+			rect.x += 2;
+			for (String entry : this.suggestL) {
+				rect.y -= tr.fontHeight + 1;
+				if (rect.y < (this.rectangle.y - this.rectangle.height)) {
+					tr.draw(matrixStack, "...", rect.x, rect.y, 0xF0F0F000);
+					break;
+				}
+				tr.draw(matrixStack, entry, rect.x, rect.y, 0xF0F0F000);
+				
+			}
+
+			GL11.glEnable(GL11.GL_DEPTH_TEST);
 		}
+
+		//@Override
+		//protected void renderHoleBackground(int top, int bottom, int topAlpha, int bottomAlpha) {}
 	}
 
 	public EntityType<?> getMobFromName(String name)

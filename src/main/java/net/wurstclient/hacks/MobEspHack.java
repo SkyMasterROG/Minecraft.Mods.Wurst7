@@ -203,6 +203,9 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		int regionX, int regionZ)
 	{
 		float extraSize = boxSize.getSelected().extraSize;
+		// TODO: hitbox
+		boolean hitbox = extraSize == 1F;
+		
 		RenderSystem.setShader(GameRenderer::getPositionShader);
 		
 		for(MobEntity e : mobs)
@@ -214,8 +217,18 @@ public final class MobEspHack extends Hack implements UpdateListener,
 				e.prevY + (e.getY() - e.prevY) * partialTicks,
 				e.prevZ + (e.getZ() - e.prevZ) * partialTicks - regionZ);
 			
-			matrixStack.scale(e.getWidth() + extraSize,
-				e.getHeight() + extraSize, e.getWidth() + extraSize);
+			if (hitbox) {
+				matrixStack.scale(
+					(float)e.getBoundingBox().getXLength(),
+					(float)e.getBoundingBox().getYLength(),
+					(float)e.getBoundingBox().getZLength()
+				);
+			}
+			else {
+				matrixStack.scale(
+					e.getWidth() + extraSize, e.getHeight() + extraSize, e.getWidth() + extraSize);
+			}
+			
 			
 			float f = MC.player.distanceTo(e) / 20F;
 			RenderSystem.setShaderColor(2 - f, f, 0, 0.5F);
@@ -314,7 +327,8 @@ public final class MobEspHack extends Hack implements UpdateListener,
 	private enum BoxSize
 	{
 		ACCURATE("Accurate", 0),
-		FANCY("Fancy", 0.1F);
+		FANCY("Fancy", 0.1F),
+		HITBOX("Hit Box", 1F);
 		
 		private final String name;
 		private final float extraSize;

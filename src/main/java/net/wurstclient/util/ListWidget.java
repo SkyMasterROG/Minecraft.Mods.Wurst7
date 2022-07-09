@@ -376,18 +376,18 @@ public abstract class ListWidget extends AbstractParentElement
 		int x, int y,
 		int mouseX, int mouseY, float delta)
 	{
-		int m = getItemCount();
+		int count = getItemCount();
 		Tessellator tessellator = Tessellator.getInstance();
 		BufferBuilder bufferBuilder = tessellator.getBuffer();
 		
-		for(int index = 0; index < m; ++index)
+		for(int i = 0; i < count; ++i)
 		{
-			int posY = y + index * this.itemHeight + headerHeight;
+			int posY = y + i * this.itemHeight + headerHeight;
 			int itemH = this.itemHeight - 4;
 			if(posY > bottom || posY + itemH < top)
-				updateItemPosition(index, x, posY, delta);
+				updateItemPosition(i, x, posY, delta);
 			
-			if(renderSelection && isSelectedItem(index))
+			if(renderSelection && isSelectedItem(i))
 			{
 				int q = left + width / 2 - getRowWidth() / 2;
 				int r = left + width / 2 + getRowWidth() / 2;
@@ -412,7 +412,7 @@ public abstract class ListWidget extends AbstractParentElement
 				RenderSystem.enableTexture();
 			}
 			
-			renderItem(matrixStack, index, x, posY, itemH, mouseX, mouseY, delta);
+			renderItem(matrixStack, i, x, posY, itemH, mouseX, mouseY, delta);
 		}
 		
 	}
