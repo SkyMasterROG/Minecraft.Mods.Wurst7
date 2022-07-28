@@ -24,7 +24,7 @@ public interface ChatInputListener extends Listener
 		extends CancellableEvent<ChatInputListener>
 	{
 		private Text component;
-		private List<ChatHudLine<OrderedText>> chatLines;
+/*		private List<ChatHudLine<OrderedText>> chatLines;
 		
 		public ChatInputEvent(Text component,
 			List<ChatHudLine<OrderedText>> visibleMessages)
@@ -32,7 +32,7 @@ public interface ChatInputListener extends Listener
 			this.component = component;
 			chatLines = visibleMessages;
 		}
-		
+*/
 		public Text getComponent()
 		{
 			return component;
@@ -43,11 +43,11 @@ public interface ChatInputListener extends Listener
 			this.component = component;
 		}
 		
-		public List<ChatHudLine<OrderedText>> getChatLines()
+/*		public List<ChatHudLine<OrderedText>> getChatLines()
 		{
 			return chatLines;
 		}
-		
+*/
 		@Override
 		public void fire(ArrayList<ChatInputListener> listeners)
 		{

@@ -10,6 +10,7 @@ package net.wurstclient.commands;
 import org.apache.commons.lang3.StringUtils;
 
 import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.text.Text;
 import net.wurstclient.command.CmdError;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdSyntaxError;
@@ -100,6 +101,6 @@ public final class AnnoyCmd extends Command implements ChatInputListener
 		int beginIndex = message.indexOf(prefix) + prefix.length();
 		String repeated = message.substring(beginIndex).trim();
 		repeated = StringUtils.normalizeSpace(repeated);
-		MC.player.sendChatMessage(repeated);
+		MC.player.sendChatMessage(repeated, Text.literal(repeated));
 	}
 }

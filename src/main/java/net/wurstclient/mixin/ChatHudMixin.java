@@ -28,8 +28,8 @@ import net.wurstclient.events.ChatInputListener.ChatInputEvent;
 @Mixin(ChatHud.class)
 public class ChatHudMixin extends DrawableHelper
 {
-	@Shadow
-	private List<ChatHudLine<OrderedText>> visibleMessages;
+//	@Shadow
+//	private List<ChatHudLine<OrderedText>> visibleMessages;
 	@Shadow
 	private static Logger LOGGER;
 	@Shadow
@@ -40,7 +40,7 @@ public class ChatHudMixin extends DrawableHelper
 		cancellable = true)
 	private void onAddMessage(Text chatText, int chatLineId, CallbackInfo ci)
 	{
-		ChatInputEvent event = new ChatInputEvent(chatText, visibleMessages);
+/* 		ChatInputEvent event = new ChatInputEvent(chatText, visibleMessages);
 		
 		EventManager.fire(event);
 		if(event.isCancelled())
@@ -56,6 +56,7 @@ public class ChatHudMixin extends DrawableHelper
 		LOGGER.info("[CHAT] {}",
 			chatText.getString().replace("\r", "\\r").replace("\n", "\\n"));
 		ci.cancel();
+*/
 	}
 	
 	@Shadow

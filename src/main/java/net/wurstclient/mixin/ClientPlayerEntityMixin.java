@@ -33,8 +33,8 @@ import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.network.encryption.PlayerPublicKey;
 import net.minecraft.network.message.ArgumentSignatureDataMap;
-import net.minecraft.network.message.ChatMessageSigner;
-import net.minecraft.network.message.MessageSignature;
+//import net.minecraft.network.message.ChatMessageSigner;
+//import net.minecraft.network.message.MessageSignature;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.Vec3d;
 import net.wurstclient.WurstClient;
@@ -145,7 +145,7 @@ public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 		tempCurrentScreen = null;
 	}
 	
-	@Inject(at = @At("HEAD"),
+/*	@Inject(at = @At("HEAD"),
 		method = "signChatMessage(Lnet/minecraft/network/message/ChatMessageSigner;Lnet/minecraft/text/Text;)Lnet/minecraft/network/message/MessageSignature;",
 		cancellable = true)
 	private void onSignChatMessage(ChatMessageSigner signer, Text message,
@@ -165,7 +165,7 @@ public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 		if(WurstClient.INSTANCE.getOtfs().noChatReportsOtf.isActive())
 			cir.setReturnValue(ArgumentSignatureDataMap.empty());
 	}
-	
+*/
 	@Override
 	public void setVelocityClient(double x, double y, double z)
 	{
@@ -254,13 +254,13 @@ public class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 		this.movementMultiplier = movementMultiplier;
 	}
 	
-	@Shadow
+/*	@Shadow
 	private void sendChatMessagePacket(ChatMessageSigner signer, String message,
 		@Nullable Text preview)
 	{
 		
 	}
-
+ */
 	/*@Override
 	public boolean interact(net.minecraft.entity.player.PlayerEntity player,
 								net.minecraft.util.Hand hand) {

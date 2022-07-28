@@ -7,6 +7,7 @@
  */
 package net.wurstclient.commands;
 
+import net.minecraft.text.Text;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdSyntaxError;
 import net.wurstclient.command.Command;
@@ -21,9 +22,10 @@ public final class LeaveCmd extends Command
 	@Override
 	public void call(String[] args) throws CmdException
 	{
+		String message = "Taco!";
 		if(args.length == 1 && args[0].equalsIgnoreCase("taco"))
 			for(int i = 0; i < 128; i++)
-				MC.player.sendChatMessage("Taco!");
+				MC.player.sendChatMessage(message, Text.literal(message));
 		else if(args.length != 0)
 			throw new CmdSyntaxError();
 		

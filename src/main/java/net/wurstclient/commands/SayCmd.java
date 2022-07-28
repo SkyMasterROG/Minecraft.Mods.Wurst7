@@ -7,6 +7,7 @@
  */
 package net.wurstclient.commands;
 
+import net.minecraft.text.Text;
 import net.wurstclient.SearchTags;
 import net.wurstclient.command.CmdException;
 import net.wurstclient.command.CmdSyntaxError;
@@ -32,6 +33,6 @@ public final class SayCmd extends Command
 		if(message.startsWith("/"))
 			MC.player.sendCommand(message.substring(1));
 		else
-			MC.player.sendChatMessage(message);
+			MC.player.sendChatMessage(message, Text.literal(message));
 	}
 }

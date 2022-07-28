@@ -17,6 +17,7 @@ import net.minecraft.client.gui.screen.ChatScreen;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.network.ChatPreviewer;
+import net.minecraft.client.network.ChatPreviewer.Response;
 import net.minecraft.text.Text;
 import net.wurstclient.WurstClient;
 import net.wurstclient.event.EventManager;
@@ -91,7 +92,8 @@ public class ChatScreenMixin extends Screen
 		
 		String newMessage = event.getMessage();
 		client.inGameHud.getChatHud().addToMessageHistory(newMessage);
-		Text preview = chatPreviewer.tryConsumeResponse(newMessage);
+		Response response = chatPreviewer.tryConsumeResponse(newMessage);
+		Text preview = response.previewText();
 		
 		if(newMessage.startsWith("/"))
 			client.player.sendCommand(newMessage.substring(1), preview);

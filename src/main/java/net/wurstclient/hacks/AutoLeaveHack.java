@@ -9,6 +9,7 @@ package net.wurstclient.hacks;
 
 import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
+import net.minecraft.text.Text;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.events.UpdateListener;
@@ -92,7 +93,8 @@ public final class AutoLeaveHack extends Hack implements UpdateListener
 			break;
 			
 			case CHARS:
-			MC.player.sendChatMessage("\u00a7");
+			String message = "\u00a7";
+			MC.player.sendChatMessage(message, Text.literal(message));
 			break;
 			
 			case TELEPORT:

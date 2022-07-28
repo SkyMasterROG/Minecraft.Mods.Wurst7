@@ -47,19 +47,19 @@ public final class AntiSpamHack extends Hack implements ChatInputListener
 	@Override
 	public void onReceivedMessage(ChatInputEvent event)
 	{
-		List<ChatHudLine<OrderedText>> chatLines = event.getChatLines();
+/*		List<ChatHudLine<OrderedText>> chatLines = event.getChatLines();
 		if(chatLines.isEmpty())
 			return;
 		
-		/**
-		 * A {@link CharacterVisitor} to completely bypass Mojang's visitor
-		 * system and just get the damn {@link String} out of a
-		 * {@link ChatHudLine}.
-		 *
-		 * <p>
-		 * Is this seriously the replacement for <code>getString()</code>?
-		 * What were they thinking?!
-		 */
+		//
+		// A {@link CharacterVisitor} to completely bypass Mojang's visitor
+		// system and just get the damn {@link String} out of a
+		// {@link ChatHudLine}.
+		//
+		// <p>
+		// Is this seriously the replacement for <code>getString()</code>?
+		// What were they thinking?!
+		//
 		class JustGiveMeTheStringVisitor implements CharacterVisitor
 		{
 			StringBuilder sb = new StringBuilder();
@@ -172,5 +172,6 @@ public final class AntiSpamHack extends Hack implements ChatInputListener
 		if(spamCounter > 1)
 			event.setComponent(((MutableText)event.getComponent())
 				.append(" [x" + spamCounter + "]"));
+*/
 	}
 }
