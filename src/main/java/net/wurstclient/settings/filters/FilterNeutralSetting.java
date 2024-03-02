@@ -12,6 +12,7 @@ import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.mob.PiglinEntity;
 import net.minecraft.entity.passive.PufferfishEntity;
+import net.minecraft.entity.passive.WolfEntity;
 
 public final class FilterNeutralSetting extends AttackDetectingEntityFilter
 {
@@ -29,6 +30,11 @@ public final class FilterNeutralSetting extends AttackDetectingEntityFilter
 	@Override
 	public boolean onTest(Entity e)
 	{
+		// never filter out neutral mobs
+		if(e instanceof WolfEntity)
+			return true;
+		
+		// filtered
 		return !(e instanceof Angerable || e instanceof PufferfishEntity
 			|| e instanceof PiglinEntity);
 	}

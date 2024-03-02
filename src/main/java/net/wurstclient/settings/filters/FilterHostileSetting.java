@@ -11,6 +11,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.mob.Angerable;
 import net.minecraft.entity.mob.Monster;
 import net.minecraft.entity.mob.PiglinEntity;
+import net.minecraft.entity.mob.ZombieVillagerEntity;
 
 public final class FilterHostileSetting extends EntityFilterCheckbox
 {
@@ -26,9 +27,16 @@ public final class FilterHostileSetting extends EntityFilterCheckbox
 	public boolean test(Entity e)
 	{
 		// never filter out neutral mobs (including piglins)
-		if(e instanceof Angerable || e instanceof PiglinEntity)
-			return false;
+		if(e instanceof Angerable)
+			return true;
 		
+		if(e instanceof PiglinEntity)
+			return true;
+		
+		if(e instanceof ZombieVillagerEntity)
+			return true;
+		
+		// filtered
 		return !(e instanceof Monster);
 	}
 	

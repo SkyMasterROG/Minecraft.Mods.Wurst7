@@ -55,11 +55,15 @@ public final class MobEspHack extends Hack implements UpdateListener,
 		"\u00a7lAccurate\u00a7r mode shows the exact hitbox of each mob.\n"
 			+ "\u00a7lFancy\u00a7r mode shows slightly larger boxes that look better.");
 	
+	// https://minecraft.fandom.com/wiki/Mob
 	private final EntityFilterList entityFilters =
 		new EntityFilterList(FilterHostileSetting.genericVision(false),
 			FilterNeutralSetting
 				.genericVision(AttackDetectingEntityFilter.Mode.OFF),
+			FilterBeesSetting.genericVision(false),
+			FilterWolfsSetting.genericVision(false),
 			FilterPassiveSetting.genericVision(false),
+			FilterAllaysSetting.genericVision(false),
 			FilterPassiveWaterSetting.genericVision(false),
 			FilterBatsSetting.genericVision(false),
 			FilterSlimesSetting.genericVision(false),
@@ -74,7 +78,6 @@ public final class MobEspHack extends Hack implements UpdateListener,
 			FilterEndermenSetting
 				.genericVision(AttackDetectingEntityFilter.Mode.OFF),
 			FilterShulkersSetting.genericVision(false),
-			FilterAllaysSetting.genericVision(false),
 			FilterInvisibleSetting.genericVision(false),
 			FilterNamedSetting.genericVision(false),
 			FilterArmorStandsSetting.genericVision(true));
