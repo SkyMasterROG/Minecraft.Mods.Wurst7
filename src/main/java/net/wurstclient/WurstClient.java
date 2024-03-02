@@ -140,7 +140,8 @@ public enum WurstClient
 		eventManager.add(PostMotionListener.class, rotationFaker);
 		
 		updater = new WurstUpdater();
-		eventManager.add(UpdateListener.class, updater);
+		if(analytics.isEnabled())
+			eventManager.add(UpdateListener.class, updater);
 		
 		problematicPackDetector = new ProblematicResourcePackDetector();
 		problematicPackDetector.start();
