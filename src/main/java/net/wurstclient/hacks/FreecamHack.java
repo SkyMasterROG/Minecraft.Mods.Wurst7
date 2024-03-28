@@ -8,6 +8,8 @@
 package net.wurstclient.hacks;
 
 import java.awt.Color;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.joml.Matrix4f;
 import org.lwjgl.opengl.GL11;
@@ -23,9 +25,12 @@ import net.minecraft.client.render.Tessellator;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;
 import net.minecraft.client.util.math.MatrixStack;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.boss.dragon.EnderDragonEntity;
 import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
 import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.World;
 import net.wurstclient.Category;
 import net.wurstclient.SearchTags;
 import net.wurstclient.events.*;
@@ -110,7 +115,24 @@ public final class FreecamHack extends Hack implements UpdateListener,
 		ClientPlayerEntity player = MC.player;
 		player.setVelocity(Vec3d.ZERO);
 		
-		MC.worldRenderer.reload();
+		// game crash, is World.END and no EnderDragonEntity
+		boolean canRendererReload = true;
+		if(MC.world.getRegistryKey() == World.END)
+		{
+			Stream<LivingEntity> stream = StreamSupport
+				.stream(MC.world.getEntities().spliterator(), false)
+				.filter(LivingEntity.class::isInstance)
+				.map(e -> (LivingEntity)e)
+				.filter(e -> (e instanceof EnderDragonEntity))
+				.filter(e -> !e.isRemoved() && e.getHealth() > 0);
+			
+			canRendererReload = stream.count() >= 1;
+		}
+		
+		if(canRendererReload)
+		{
+			MC.worldRenderer.reload();
+		}
 	}
 	
 	@Override
